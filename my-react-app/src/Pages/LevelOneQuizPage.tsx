@@ -1,92 +1,185 @@
+import { useState, useEffect } from "react";
+
 const LevelOneQuizPage = () => {
+  const [answers, setAnswers] = useState<Record<number, number[]>>({});
+  const [score, setScore] = useState<number | null>(null);
+
+  const saveStateToLocalStorage = () => {
+    localStorage.setItem("answers", JSON.stringify(answers));
+    localStorage.setItem("score", JSON.stringify(score));
+  };
+
+  useEffect(() => {
+    const savedAnswers = localStorage.getItem("answers");
+    const savedScore = localStorage.getItem("score");
+
+    if (savedAnswers) {
+      setAnswers(JSON.parse(savedAnswers));
+    }
+    if (savedScore) {
+      setScore(JSON.parse(savedScore));
+    }
+  }, []);
+
+  const handleSelect = (question: number, answer: number) => {
+    setAnswers((prevAnswers) => {
+      const selectedAnswers = prevAnswers[question] || [];
+      return {
+        ...prevAnswers,
+        [question]: selectedAnswers.includes(answer)
+          ? selectedAnswers.filter((a) => a !== answer)
+          : [...selectedAnswers, answer],
+      };
+    });
+  };
+
+  const handleSubmit = () => {
+    let totalMarks = 0;
+    questions.forEach((q, index) => {
+      const selected = answers[index] || [];
+      const correct = q.correct;
+      const selectedCorrect = selected.filter((answer) => correct.includes(answer));
+      const partialMark = (selectedCorrect.length / correct.length) * 100;
+      totalMarks += partialMark;
+    });
+    setScore((totalMarks / questions.length) || 0);
+    window.scrollTo(0, 0);
+  };
+
+  const questions = [
+    {
+      question: "1. What is the primary purpose of a document builder?",
+      options: [
+        "To manually type documents faster",
+        "To automate document creation and customization",
+        "To store documents permanently",
+        "To translate documents into different languages",
+      ],
+      correct: [1],
+    },
+    {
+      question: "2. Which of the following features are commonly found in a document builder?",
+      options: [
+        "Real-time collaboration",
+        "Video editing tools",
+        "Template-based document creation",
+        "Handwritten document scanning",
+      ],
+      correct: [0, 2],
+    },
+    {
+      question: "3. Which file formats are commonly supported for exporting documents?",
+      options: ["PDF", "DOCX", "MP4", "JPG"],
+      correct: [0, 1],
+    },
+    {
+      question: "4. What is the key advantage of using document templates?",
+      options: [
+        "They ensure consistency and save time",
+        "They make documents harder to customize",
+        "They require starting from scratch each time",
+        "They increase the size of the document",
+      ],
+      correct: [0],
+    },
+    {
+      question: "5. How does version control help in document building?",
+      options: [
+        "It allows users to track and revert to previous versions",
+        "It prevents any modifications after a document is created",
+        "It helps users collaborate by tracking changes",
+        "It automatically deletes old versions",
+      ],
+      correct: [0, 2],
+    },
+    {
+      question: "6. Why is role-based access control important in a document builder?",
+      options: [
+        "It allows only one user to edit at a time",
+        "It ensures only authorized users can view or edit specific documents",
+        "It prevents documents from being saved",
+        "It removes the need for login credentials",
+      ],
+      correct: [1],
+    },
+    {
+      question: "7. What automation features can a document builder have?",
+      options: [
+        "Auto-fill fields based on user input",
+        "Conditional content based on form responses",
+        "Manual document formatting only",
+        "Static document structure",
+      ],
+      correct: [0, 1],
+    },
+    {
+      question: "8. Which integrations are most useful in a contract document builder?",
+      options: [
+        "E-signature platforms (e.g., DocuSign)",
+        "CRM systems (e.g., Salesforce)",
+        "Social media sharing tools",
+        "Cloud storage services (e.g., Google Drive)",
+      ],
+      correct: [0, 1, 3],
+    },
+    {
+      question: "9. What are the advantages of using dynamic content in a document builder?",
+      options: [
+        "It allows content to change based on external data",
+        "It makes documents harder to edit",
+        "It requires manual updates each time",
+        "It only works for printed documents",
+      ],
+      correct: [0],
+    },
+    {
+      question: "10. What are some challenges in implementing a document builder?",
+      options: [
+        "Ensuring data security and privacy",
+        "Making the document creation process more complex",
+        "Integrating with existing business tools",
+        "Removing automation features to increase manual control",
+      ],
+      correct: [0, 2],
+    },
+  ];
+
   return (
-    <div className="h-screen bg-red-400">
-      <div>
-        <h2>1. What is the primary purpose of a document builder?</h2>
-        <h1>A) To manually type documents faster</h1>
-        <h1>B) To automate document creation and customization </h1>☑️
-        <h1>C) To store documents permanently</h1>
-        <h1>D) To translate documents into different languages</h1>
+    <div className="h-screen bg-red-400 p-6">
+      <div className="flex items-center mb-4">
+        <div className="w-full bg-gray-300 h-4 rounded mr-2">
+          <div
+            className="bg-green-500 h-4 rounded"
+            style={{ width: `${score ?? 0}%` }}
+          ></div>
+        </div>
+        <span className="text-lg font-semibold">{score ?? 0}%</span>
       </div>
-      <div>
-        <h2>
-          2. Which of the following features are commonly found in a document
-          builder?
-        </h2>
-        <h1>A) Real-time collaboration</h1>☑️
-        <h1>B) Video editing tools</h1>
-        <h1>C) Template-based document creation</h1>☑️
-        <h1>D) Handwritten document scanning</h1>
-      </div>
-      <div>
-        <h2>
-          3. Which file formats are commonly supported for exporting documents?
-        </h2>
-        <h1>A) PDF</h1>☑️
-        <h1>B) DOCX</h1>☑️
-        <h1>C) MP4</h1>
-        <h1>D) JPG</h1>
-      </div>
-      <div>
-        <h2>4. What is the key advantage of using document templates?</h2>
-        <h1>A) They ensure consistency and save time</h1>☑️
-        <h1>B) They make documents harder to customize</h1>
-        <h1>C) They require starting from scratch each time</h1>
-        <h1>D) They increase the size of the document</h1>
-      </div>
-      <div>
-        <h2>5. How does version control help in document building?</h2>
-        <h1>A) It allows users to track and revert to previous versions</h1>☑️
-        <h1>B) It prevents any modifications after a document is created</h1>
-        <h1>C) It helps users collaborate by tracking changes</h1>☑️
-        <h1>D) It automatically deletes old versions</h1>
-      </div>
-      <div>
-        <h2>
-          6. Why is role-based access control important in a document builder?
-        </h2>
-        <h1>A) It allows only one user to edit at a time</h1>☑️
-        <h1>
-          B) It ensures only authorized users can view or edit specific
-          documents
-        </h1>
-        <h1>C) It prevents documents from being saved</h1>
-        <h1>D) It removes the need for login credentials</h1>
-      </div>
-      <div>
-        <h2>7. What automation features can a document builder have?</h2>
-        <h1>A) Auto-fill fields based on user input</h1>☑️
-        <h1>B) Conditional content based on form responses</h1>☑️
-        <h1>C) Manual document formatting only</h1>
-        <h1>D) Static document structure</h1>
-      </div>
-      <div>
-        <h2>
-          8. Which integrations are most useful in a contract document builder?
-        </h2>
-        <h1>A) E-signature platforms (e.g., DocuSign)</h1>☑️
-        <h1>B) CRM systems (e.g., Salesforce)</h1>☑️
-        <h1>C) Social media sharing tools</h1>
-        <h1>D) Cloud storage services (e.g., Google Drive)</h1>☑️
-      </div>
-      <div>
-        <h2>
-          9. What are the advantages of using dynamic content in a document
-          builder?
-        </h2>
-        <h1>A) It allows content to change based on external data</h1>☑️
-        <h1>B) It makes documents harder to edit</h1>
-        <h1>C) It requires manual updates each time</h1>
-        <h1>D) It only works for printed documents</h1>
-      </div>
-      <div>
-        <h2>
-          10. What are some challenges in implementing a document builder?
-        </h2>
-        <h1>A) Ensuring data security and privacy</h1>☑️
-        <h1>B) Making the document creation process more complex</h1>
-        <h1>C) Integrating with existing business tools</h1>☑️
-        <h1>D) Removing automation features to increase manual control</h1>
+      {questions.map((q, qIndex) => (
+        <div key={qIndex} className="mb-6 p-4 bg-white rounded-lg shadow">
+          <h2 className="font-semibold mb-2">{q.question}</h2>
+          {q.options.map((option, oIndex) => (
+            <label key={oIndex} className="block p-2 cursor-pointer">
+              <input
+                type="checkbox"
+                name={`question-${qIndex}`}
+                value={oIndex}
+                checked={answers[qIndex]?.includes(oIndex) || false}
+                onChange={() => handleSelect(qIndex, oIndex)}
+                className="mr-2"
+              />
+              {option}
+            </label>
+          ))}
+        </div>
+      ))}
+      <div className="mt-5 py-3">
+        <button
+          onClick={handleSubmit}
+          className="mt-4 p-2 bg-blue-500 text-white rounded"
+        >
+          Submit
+        </button>
       </div>
     </div>
   );
