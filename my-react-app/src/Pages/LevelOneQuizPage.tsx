@@ -1,50 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 const LevelOneQuizPage = () => {
   const [answers, setAnswers] = useState<Record<number, number[]>>({});
   const [score, setScore] = useState<number | null>(null);
-
-  const saveStateToLocalStorage = () => {
-    localStorage.setItem("answers", JSON.stringify(answers));
-    localStorage.setItem("score", JSON.stringify(score));
-  };
-
-  useEffect(() => {
-    const savedAnswers = localStorage.getItem("answers");
-    const savedScore = localStorage.getItem("score");
-
-    if (savedAnswers) {
-      setAnswers(JSON.parse(savedAnswers));
-    }
-    if (savedScore) {
-      setScore(JSON.parse(savedScore));
-    }
-  }, []);
-
-  const handleSelect = (question: number, answer: number) => {
-    setAnswers((prevAnswers) => {
-      const selectedAnswers = prevAnswers[question] || [];
-      return {
-        ...prevAnswers,
-        [question]: selectedAnswers.includes(answer)
-          ? selectedAnswers.filter((a) => a !== answer)
-          : [...selectedAnswers, answer],
-      };
-    });
-  };
-
-  const handleSubmit = () => {
-    let totalMarks = 0;
-    questions.forEach((q, index) => {
-      const selected = answers[index] || [];
-      const correct = q.correct;
-      const selectedCorrect = selected.filter((answer) => correct.includes(answer));
-      const partialMark = (selectedCorrect.length / correct.length) * 100;
-      totalMarks += partialMark;
-    });
-    setScore((totalMarks / questions.length) || 0);
-    window.scrollTo(0, 0);
-  };
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
 
   const questions = [
     {
@@ -144,42 +103,68 @@ const LevelOneQuizPage = () => {
     },
   ];
 
+  const handleSelect = (question: number, answer: number) => {
+    setAnswers((prevAnswers) => {
+      const selectedAnswers = prevAnswers[question] || [];
+      return {
+        ...prevAnswers,
+        [question]: selectedAnswers.includes(answer)
+          ? selectedAnswers.filter((a) => a !== answer)
+          : [...selectedAnswers, answer],
+      };
+    });
+  };
+
+  const handleSubmit = (questionIndex: number) => {
+    const selected = answers[questionIndex] || [];
+    const correct = questions[questionIndex].correct;
+    const selectedCorrect = selected.filter((answer) => correct.includes(answer));
+    const partialMark = (selectedCorrect.length / correct.length) * 10;
+    setScore((prevScore) => (prevScore ?? 0) + partialMark);
+    if (currentQuestionIndex < questions.length - 1) {
+      setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
+    } else {
+      alert("Quiz finished!");
+    }
+  };
+  
+
   return (
     <div className="h-screen bg-red-400 p-6">
-      <div className="flex items-center mb-4">
-        <div className="w-full bg-gray-300 h-4 rounded mr-2">
+      <div className="flex items-center mb-4 space-x-4">
+        <div className="w-full bg-gray-300 h-4 rounded relative">
           <div
             className="bg-green-500 h-4 rounded"
             style={{ width: `${score ?? 0}%` }}
           ></div>
         </div>
-        <span className="text-lg font-semibold">{score ?? 0}%</span>
+        <span className="text-lg font-semibold min-w-[50px] text-white">
+          {Math.round(score ?? 0)}%
+        </span>
       </div>
-      {questions.map((q, qIndex) => (
-        <div key={qIndex} className="mb-6 p-4 bg-white rounded-lg shadow">
-          <h2 className="font-semibold mb-2">{q.question}</h2>
-          {q.options.map((option, oIndex) => (
-            <label key={oIndex} className="block p-2 cursor-pointer">
-              <input
-                type="checkbox"
-                name={`question-${qIndex}`}
-                value={oIndex}
-                checked={answers[qIndex]?.includes(oIndex) || false}
-                onChange={() => handleSelect(qIndex, oIndex)}
-                className="mr-2"
-              />
-              {option}
-            </label>
-          ))}
+      <div key={currentQuestionIndex} className="mb-6 p-4 bg-white rounded-lg shadow">
+        <h2 className="font-semibold mb-2">{questions[currentQuestionIndex].question}</h2>
+        {questions[currentQuestionIndex].options.map((option, oIndex) => (
+          <label key={oIndex} className="block p-2 cursor-pointer">
+            <input
+              type="checkbox"
+              name={`question-${currentQuestionIndex}`}
+              value={oIndex}
+              checked={answers[currentQuestionIndex]?.includes(oIndex) || false}
+              onChange={() => handleSelect(currentQuestionIndex, oIndex)}
+              className="mr-2"
+            />
+            {option}
+          </label>
+        ))}
+        <div className="mt-5 py-3">
+          <button
+            onClick={() => handleSubmit(currentQuestionIndex)}
+            className="mt-4 p-2 bg-blue-500 text-white rounded hover:scale-102 w-full"
+          >
+            Submit
+          </button>
         </div>
-      ))}
-      <div className="mt-5 py-3">
-        <button
-          onClick={handleSubmit}
-          className="mt-4 p-2 bg-blue-500 text-white rounded"
-        >
-          Submit
-        </button>
       </div>
     </div>
   );
