@@ -1,8 +1,8 @@
 import { Routes, Route } from "react-router";
-import HomePage from "./Pages/HomePage";
-import LevelOneQuizPage from "./Pages/LevelOneQuizPage";
+import HomePage from "../Pages/HomePage";
+import LevelOneQuizPage from "../Pages/LevelOneQuizPage";
 
-const App = () => {
+const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
@@ -11,4 +11,4 @@ const App = () => {
   );
 };
 
-export default App;
+export default AppRoutes;
