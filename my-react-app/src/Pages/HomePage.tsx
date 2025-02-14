@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { FaFileAlt, FaProjectDiagram, FaHandshake } from "react-icons/fa";
 import { LuBrain } from "react-icons/lu";
+import { Link } from "react-router";
 import Header from "./Header";
 
 interface LevelProps {
@@ -9,6 +10,7 @@ interface LevelProps {
   Icon: React.ComponentType<{ className?: string }>;
   active: boolean;
   onClick: () => void;
+  link: string;
 }
 
 const LevelCard = ({
@@ -17,6 +19,7 @@ const LevelCard = ({
   Icon,
   active,
   onClick,
+  link,
 }: LevelProps) => (
   <div
     className={`p-6 rounded-2xl transition-all duration-300 cursor-pointer shadow-lg hover:shadow-xl relative 
@@ -55,9 +58,12 @@ const LevelCard = ({
     </p>
     {active && (
       <div className="flex justify-center mt-4">
-        <button className="px-6 py-2.5 max-w-[200px] cursor-pointer w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-medium shadow-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300">
+        <Link
+          to={link}
+          className="px-6 py-2.5 max-w-[200px] cursor-pointer w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-medium shadow-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 text-center"
+        >
           Start Level
-        </button>
+        </Link>
       </div>
     )}
   </div>
@@ -69,24 +75,28 @@ const levelsData = [
     description:
       "Create and manage professional contracts using our intuitive drag-and-drop interface",
     Icon: FaFileAlt,
+    link: "/Level-One-Quiz",
   },
   {
     title: "Workflow Master",
     description:
       "Design, optimize, and automate complex approval workflows for maximum efficiency",
     Icon: FaProjectDiagram,
+    link: "/Level-Two-Quiz",
   },
   {
     title: "Negotiation Expert",
     description:
       "Master the art of navigating and resolving complex stakeholder requirements",
     Icon: FaHandshake,
+    link: "/Level-Three-Quiz",
   },
   {
     title: "CLM Detective",
     description:
       "Analyze and solve real-world contract lifecycle management challenges",
     Icon: LuBrain,
+    link: "/Level-Four-Quiz",
   },
 ];
 
