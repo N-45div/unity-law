@@ -1,9 +1,11 @@
 import { useState } from "react";
 
 const LevelOneQuizPage = () => {
-  const [answers, setAnswers] = useState<Record<number, number[]>>({});
-  const [score, setScore] = useState<number | null>(null);
+  const [score, setScore] = useState<number>(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
+  const [progressIndex, setProgressIndex] = useState<number>(0);
+  const [selected, setSelected] = useState<boolean>(false);
+  const [showPopup, setShowPopup] = useState<boolean>(false);
 
   const questions = [
     {
@@ -14,7 +16,7 @@ const LevelOneQuizPage = () => {
         "To store documents permanently",
         "To translate documents into different languages",
       ],
-      correct: [1],
+      correct: 1,
     },
     {
       question: "2. Which of the following features are commonly found in a document builder?",
@@ -24,12 +26,12 @@ const LevelOneQuizPage = () => {
         "Template-based document creation",
         "Handwritten document scanning",
       ],
-      correct: [0, 2],
+      correct: 0,
     },
     {
       question: "3. Which file formats are commonly supported for exporting documents?",
       options: ["PDF", "DOCX", "MP4", "JPG"],
-      correct: [0, 1],
+      correct: 1,
     },
     {
       question: "4. What is the key advantage of using document templates?",
@@ -39,7 +41,7 @@ const LevelOneQuizPage = () => {
         "They require starting from scratch each time",
         "They increase the size of the document",
       ],
-      correct: [0],
+      correct: 0,
     },
     {
       question: "5. How does version control help in document building?",
@@ -49,7 +51,7 @@ const LevelOneQuizPage = () => {
         "It helps users collaborate by tracking changes",
         "It automatically deletes old versions",
       ],
-      correct: [0, 2],
+      correct: 2,
     },
     {
       question: "6. Why is role-based access control important in a document builder?",
@@ -59,7 +61,7 @@ const LevelOneQuizPage = () => {
         "It prevents documents from being saved",
         "It removes the need for login credentials",
       ],
-      correct: [1],
+      correct: 1,
     },
     {
       question: "7. What automation features can a document builder have?",
@@ -69,7 +71,7 @@ const LevelOneQuizPage = () => {
         "Manual document formatting only",
         "Static document structure",
       ],
-      correct: [0, 1],
+      correct: 0,
     },
     {
       question: "8. Which integrations are most useful in a contract document builder?",
@@ -79,7 +81,7 @@ const LevelOneQuizPage = () => {
         "Social media sharing tools",
         "Cloud storage services (e.g., Google Drive)",
       ],
-      correct: [0, 1, 3],
+      correct: 0,
     },
     {
       question: "9. What are the advantages of using dynamic content in a document builder?",
@@ -89,7 +91,7 @@ const LevelOneQuizPage = () => {
         "It requires manual updates each time",
         "It only works for printed documents",
       ],
-      correct: [0],
+      correct: 0,
     },
     {
       question: "10. What are some challenges in implementing a document builder?",
@@ -99,34 +101,38 @@ const LevelOneQuizPage = () => {
         "Integrating with existing business tools",
         "Removing automation features to increase manual control",
       ],
-      correct: [0, 2],
+      correct: 2,
     },
   ];
 
   const handleSelect = (question: number, answer: number) => {
-    setAnswers((prevAnswers) => {
-      const selectedAnswers = prevAnswers[question] || [];
-      return {
-        ...prevAnswers,
-        [question]: selectedAnswers.includes(answer)
-          ? selectedAnswers.filter((a) => a !== answer)
-          : [...selectedAnswers, answer],
-      };
-    });
+    setSelected(true);
+    const correct = questions[question].correct;
+    if (correct == answer) {
+      setScore((prevScore) => (prevScore + 10));
+    }
+    else {
+      if (score > 0) {
+        setScore((prevScore) => (prevScore - 5));
+      }
+    }
+    
   };
 
-  const handleSubmit = (questionIndex: number) => {
-    const selected = answers[questionIndex] || [];
-    const correct = questions[questionIndex].correct;
-    const selectedCorrect = selected.filter((answer) => correct.includes(answer));
-    const partialMark = (selectedCorrect.length / correct.length) * 10;
-    setScore((prevScore) => (prevScore ?? 0) + partialMark);
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
+  const handleNext = () => {
+    if (selected) {
+      setSelected(false);
+      setProgressIndex((prevIndex) => prevIndex + 1)
+      if (currentQuestionIndex < questions.length - 1) {
+        setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
+      } else {
+        setShowPopup(true);
+      }
     } else {
-      alert("Quiz finished!");
+      alert("Please select an option before proceeding.");
     }
   };
+  
   
 
   return (
@@ -135,36 +141,56 @@ const LevelOneQuizPage = () => {
         <div className="w-full bg-gray-300 h-4 rounded relative">
           <div
             className="bg-green-500 h-4 rounded"
-            style={{ width: `${score ?? 0}%` }}
+            style={{ width: `${progressIndex * 10}%` }}
           ></div>
         </div>
-        <span className="text-lg font-semibold min-w-[50px] text-white">
-          {Math.round(score ?? 0)}%
-        </span>
       </div>
       <div key={currentQuestionIndex} className="mb-6 p-4 bg-white rounded-lg shadow">
         <h2 className="font-semibold mb-2">{questions[currentQuestionIndex].question}</h2>
         {questions[currentQuestionIndex].options.map((option, oIndex) => (
           <label key={oIndex} className="block p-2 cursor-pointer">
             <input
-              type="checkbox"
+              type="radio"
               name={`question-${currentQuestionIndex}`}
               value={oIndex}
-              checked={answers[currentQuestionIndex]?.includes(oIndex) || false}
               onChange={() => handleSelect(currentQuestionIndex, oIndex)}
               className="mr-2"
+              disabled={selected}
             />
             {option}
           </label>
         ))}
+        {selected && (
+          <div className="mt-4 p-2 bg-gray-100 rounded">
+            <p>Correct answer: {String.fromCharCode(65 + questions[currentQuestionIndex].correct)}</p>
+            <p>
+              Incorrect answers: {questions[currentQuestionIndex].options.map((_, i) => i).filter
+              (i => i !== questions[currentQuestionIndex].correct).map
+              (i => String.fromCharCode(65 + i)).join(", ")}
+            </p>
+          </div>
+        )}
         <div className="mt-5 py-3">
           <button
-            onClick={() => handleSubmit(currentQuestionIndex)}
+            onClick={() => handleNext()}
             className="mt-4 p-2 bg-blue-500 text-white rounded hover:scale-102 w-full"
           >
-            Submit
+            Next
           </button>
         </div>
+        {showPopup && (
+          <div className="fixed top-0 left-0 w-full h-full flex justify-center items-center bg-red-400 bg-opacity-100">
+            <div className="bg-white p-6 rounded shadow-lg text-center opacity-100">
+              <h2 className="text-xl font-bold mb-4">Quiz Completed!</h2>
+              <p className="text-lg">Final Score: {score}</p>
+              <button onClick={() => {
+                  setShowPopup(false);
+                  window.location.href = "/";
+                }}
+                className="mt-4 p-2 bg-red-500 text-white rounded hover:scale-102">Close</button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
