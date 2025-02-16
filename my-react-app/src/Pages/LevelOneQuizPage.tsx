@@ -1,4 +1,9 @@
 import { useState } from "react";
+import backgroundImage from '../assets/quizBackground.png';
+import iconImage from '../assets/quizIcon.png';
+import "@fontsource/orbitron/900.css";
+import "@fontsource/pixelify-sans/400.css";
+
 
 const LevelOneQuizPage = () => {
   const [score, setScore] = useState<number>(0);
@@ -9,6 +14,24 @@ const LevelOneQuizPage = () => {
   const [showHint, setShowHint] = useState<boolean>(false);
   const [hintLimit, setHintLimit] = useState<number>(5);
   const [hintToggled, setHintToggled] = useState<boolean>(false);
+
+  const questionStyle = {
+    fontFamily: "'Orbitron', sans-serif",
+    fontWeight: 900,
+    fontSize: "45px",
+    color: "white",
+    textTransform: 'uppercase' as 'uppercase',
+    textAlign: "center" as "center",
+    padding: "10px",
+  };
+  const buttonStyle = {
+    fontFamily: "'Pixelify Sans', sans-serif",
+    fontWeight: 400,
+    fontSize: "35px",
+    color: "black",
+    textTransform: 'uppercase' as 'uppercase',
+    textAlign: "center" as "center",
+  }
 
   const questions = [
     {
@@ -143,6 +166,10 @@ const LevelOneQuizPage = () => {
       } else {
         setShowPopup(true);
       }
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
     } else {
       alert("Please select an option before proceeding.");
     }
@@ -162,82 +189,108 @@ const LevelOneQuizPage = () => {
     
   }
   
-  
-
   return (
-    <div className="h-screen bg-red-400 p-6">
-      <div className="flex items-center mb-4 space-x-4">
-        <div className="w-full bg-gray-300 h-4 rounded relative">
-          <div
-            className="bg-green-500 h-4 rounded"
-            style={{ width: `${progressIndex * 10}%` }}
-          ></div>
+    <div className="relative h-screen">
+      <div
+        className="relative inset-0 p-6 bg-center"
+        style={{
+          backgroundImage: `url(${backgroundImage})`,
+          backgroundSize: "100% 100%",
+        }}
+      >
+        <img
+          src={iconImage}
+          alt="Icon"
+          className="absolute top-2 left-0 m-0"
+          style={{ width: "200px", height: "200px" }}
+        />
+        <div className="flex items-center mb-4 space-x-4">
+          <div className="w-full bg-gray-300 h-4 rounded relative">
+            <div
+              className="bg-green-500 h-4 rounded"
+              style={{ width: `${progressIndex * 10}%` }}
+            ></div>
+          </div>
         </div>
-      </div>
-      <div className="mb-4 text-lg text-black">
-        Hints Remaining: {hintLimit}
-      </div>
-      <div key={currentQuestionIndex} className="mb-6 p-4 bg-white rounded-lg shadow">
-        <h2 className="font-semibold mb-2">{questions[currentQuestionIndex].question}</h2>
-        {questions[currentQuestionIndex].options.map((option, oIndex) => (
-          <label key={oIndex} className="block p-2 cursor-pointer">
-            <input
-              type="radio"
-              name={`question-${currentQuestionIndex}`}
-              value={oIndex}
-              onChange={() => handleSelect(currentQuestionIndex, oIndex)}
-              className="mr-2"
-              disabled={selected}
-            />
-            {option}
-          </label>
-        ))}
-        <button
-          onClick={() => handleHint()}
-          className="mt-4 p-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-        >
-          Show Hint
-        </button>
-        {showHint && (
-          <div className="mt-6 p-2 bg-gray-100 rounded">
-            <p className="text-sm text-gray-700">
-              {questions[currentQuestionIndex].hint}
-            </p>
+        <div className="mb-15 text-lg text-white flex justify-end space-x-6">
+          <div className="w-fit">Hints Remaining: {hintLimit}</div>
+          <div className="w-fit">Total Score: {score}</div>
+        </div>
+
+        <div key={currentQuestionIndex}>
+          <h2 className="mb-10" style={questionStyle}>{questions[currentQuestionIndex].question}</h2>
+          <div className="grid grid-cols-2 gap-10 h-40">
+            {questions[currentQuestionIndex].options.map((option, oIndex) => (
+              <label key={oIndex} className="flex item-center p-4 cursor-pointer text-black border border-gray-300 rounded-lg bg-gradient-to-r from-yellow-200 to-pink-300">
+                <input
+                  type="radio"
+                  name={`question-${currentQuestionIndex}`}
+                  value={oIndex}
+                  onChange={() => handleSelect(currentQuestionIndex, oIndex)}
+                  className="mr-2"
+                  disabled={selected}
+                />
+                <span>{`${String.fromCharCode(65 + oIndex)}. ${option}`}</span>
+              </label>
+            ))}
           </div>
-        )}
-        {selected && (
-          <div className="mt-4 p-2 bg-gray-100 rounded">
-            <p>Correct answer: {String.fromCharCode(65 + questions[currentQuestionIndex].correct)}</p>
-            <p>
-              Incorrect answers: {questions[currentQuestionIndex].options.map((_, i) => i).filter
-              (i => i !== questions[currentQuestionIndex].correct).map
-              (i => String.fromCharCode(65 + i)).join(", ")}
-            </p>
-          </div>
-        )}
-        <div className="mt-5 py-3">
           <button
-            onClick={() => handleNext()}
-            className="mt-4 p-2 bg-blue-500 text-white rounded hover:scale-102 w-full"
+            onClick={() => handleHint()}
+            className="mt-10 p-2 bg-blue-500 text-black rounded hover:scale-102 bg-gradient-to-r from-yellow-500 to-[#40E0D0]"
           >
-            Next
+            Show Hint
           </button>
-        </div>
-        {showPopup && (
-          <div className="fixed top-0 left-0 w-full h-full flex justify-center items-center bg-red-400 bg-opacity-100">
-            <div className="bg-white p-6 rounded shadow-lg text-center opacity-100">
-              <h2 className="text-xl font-bold mb-4">Quiz Completed!</h2>
-              <p className="text-lg">Final Score: {score}</p>
-              <button onClick={() => {
-                  setShowPopup(false);
-                  window.location.href = "/";
-                }}
-                className="mt-4 p-2 bg-red-500 text-white rounded hover:scale-102">Close</button>
+          {showHint && (
+            <div className="mt-6 p-1 rounded">
+              <p className="text-sm text-white text-bold font-bold">
+                {questions[currentQuestionIndex].hint}
+              </p>
             </div>
+          )}
+          {selected && (
+            <div className="mt-10 p-2 bg-gray-100 rounded bg-gradient-to-r from-yellow-200 to-pink-300">
+              <p>Correct answer: {String.fromCharCode(65 + questions[currentQuestionIndex].correct)}</p>
+              <p>
+                Incorrect answers: {questions[currentQuestionIndex].options.map((_, i) => i).filter
+                (i => i !== questions[currentQuestionIndex].correct).map
+                (i => String.fromCharCode(65 + i)).join(", ")}
+              </p>
+            </div>
+          )}
+          <div className="mt-5 py-3">
+            <button
+              onClick={() => handleNext()}
+              className="mt-4 p-0.5 bg-blue-500 text-black rounded hover:scale-102 w-90 bg-gradient-to-r from-yellow-500 to-[#40E0D0] block mx-auto"
+            >
+              <div style={buttonStyle}>
+                Continue
+              </div>
+            </button>
           </div>
-        )}
+          {showPopup && (
+            <div
+              className="fixed top-0 left-0 w-full h-full flex justify-center items-center bg-opacity-100"
+              style={{
+                backgroundImage: `url(${backgroundImage})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }}
+            >
+              <div className="bg-white p-6 rounded shadow-lg text-center opacity-100">
+                <h2 className="text-xl font-bold mb-4">Quiz Completed!</h2>
+                <p className="text-lg">Final Score: {score}</p>
+                <button onClick={() => {
+                    setShowPopup(false);
+                    window.location.href = "/";
+                  }}
+                  className="mt-4 p-2 bg-red-500 text-white rounded hover:scale-102">Close</button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
+    
   );
 };
 
