@@ -7,6 +7,8 @@ const LevelOneQuizPage = () => {
   const [selected, setSelected] = useState<boolean>(false);
   const [showPopup, setShowPopup] = useState<boolean>(false);
   const [showHint, setShowHint] = useState<boolean>(false);
+  const [hintLimit, setHintLimit] = useState<number>(5);
+  const [hintToggled, setHintToggled] = useState<boolean>(false);
 
   const questions = [
     {
@@ -134,7 +136,8 @@ const LevelOneQuizPage = () => {
     if (selected) {
       setSelected(false);
       setShowHint(false);
-      setProgressIndex((prevIndex) => prevIndex + 1)
+      setHintToggled(false);
+      setProgressIndex((prevIndex) => prevIndex + 1);
       if (currentQuestionIndex < questions.length - 1) {
         setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
       } else {
@@ -144,6 +147,20 @@ const LevelOneQuizPage = () => {
       alert("Please select an option before proceeding.");
     }
   };
+
+  const handleHint = () => {
+    if (!showHint && hintLimit > 0) {
+      if (!hintToggled) {
+        setHintLimit((prevLimit) => prevLimit - 1);
+        setHintToggled(true);
+      }
+      setShowHint(true);
+    }
+    else {
+      setShowHint(false);
+    }
+    
+  }
   
   
 
@@ -156,6 +173,9 @@ const LevelOneQuizPage = () => {
             style={{ width: `${progressIndex * 10}%` }}
           ></div>
         </div>
+      </div>
+      <div className="mb-4 text-lg text-black">
+        Hints Remaining: {hintLimit}
       </div>
       <div key={currentQuestionIndex} className="mb-6 p-4 bg-white rounded-lg shadow">
         <h2 className="font-semibold mb-2">{questions[currentQuestionIndex].question}</h2>
@@ -173,7 +193,7 @@ const LevelOneQuizPage = () => {
           </label>
         ))}
         <button
-          onClick={() => setShowHint(!showHint)}
+          onClick={() => handleHint()}
           className="mt-4 p-2 bg-blue-500 text-white rounded hover:bg-blue-600"
         >
           Show Hint
