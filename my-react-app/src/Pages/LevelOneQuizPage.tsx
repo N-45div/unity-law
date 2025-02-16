@@ -6,6 +6,7 @@ const LevelOneQuizPage = () => {
   const [progressIndex, setProgressIndex] = useState<number>(0);
   const [selected, setSelected] = useState<boolean>(false);
   const [showPopup, setShowPopup] = useState<boolean>(false);
+  const [showHint, setShowHint] = useState<boolean>(false);
 
   const questions = [
     {
@@ -17,6 +18,7 @@ const LevelOneQuizPage = () => {
         "To translate documents into different languages",
       ],
       correct: 1,
+      hint: "lorem ipsum",
     },
     {
       question: "2. Which of the following features are commonly found in a document builder?",
@@ -27,11 +29,13 @@ const LevelOneQuizPage = () => {
         "Handwritten document scanning",
       ],
       correct: 0,
+      hint: "lorem ipsum",
     },
     {
       question: "3. Which file formats are commonly supported for exporting documents?",
       options: ["PDF", "DOCX", "MP4", "JPG"],
       correct: 1,
+      hint: "lorem ipsum",
     },
     {
       question: "4. What is the key advantage of using document templates?",
@@ -42,6 +46,7 @@ const LevelOneQuizPage = () => {
         "They increase the size of the document",
       ],
       correct: 0,
+      hint: "lorem ipsum",
     },
     {
       question: "5. How does version control help in document building?",
@@ -52,6 +57,7 @@ const LevelOneQuizPage = () => {
         "It automatically deletes old versions",
       ],
       correct: 2,
+      hint: "lorem ipsum",
     },
     {
       question: "6. Why is role-based access control important in a document builder?",
@@ -62,6 +68,7 @@ const LevelOneQuizPage = () => {
         "It removes the need for login credentials",
       ],
       correct: 1,
+      hint: "lorem ipsum",
     },
     {
       question: "7. What automation features can a document builder have?",
@@ -72,6 +79,7 @@ const LevelOneQuizPage = () => {
         "Static document structure",
       ],
       correct: 0,
+      hint: "lorem ipsum",
     },
     {
       question: "8. Which integrations are most useful in a contract document builder?",
@@ -82,6 +90,7 @@ const LevelOneQuizPage = () => {
         "Cloud storage services (e.g., Google Drive)",
       ],
       correct: 0,
+      hint: "lorem ipsum",
     },
     {
       question: "9. What are the advantages of using dynamic content in a document builder?",
@@ -92,6 +101,7 @@ const LevelOneQuizPage = () => {
         "It only works for printed documents",
       ],
       correct: 0,
+      hint: "lorem ipsum",
     },
     {
       question: "10. What are some challenges in implementing a document builder?",
@@ -102,6 +112,7 @@ const LevelOneQuizPage = () => {
         "Removing automation features to increase manual control",
       ],
       correct: 2,
+      hint: "lorem ipsum",
     },
   ];
 
@@ -122,6 +133,7 @@ const LevelOneQuizPage = () => {
   const handleNext = () => {
     if (selected) {
       setSelected(false);
+      setShowHint(false);
       setProgressIndex((prevIndex) => prevIndex + 1)
       if (currentQuestionIndex < questions.length - 1) {
         setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
@@ -160,6 +172,19 @@ const LevelOneQuizPage = () => {
             {option}
           </label>
         ))}
+        <button
+          onClick={() => setShowHint(!showHint)}
+          className="mt-4 p-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        >
+          Show Hint
+        </button>
+        {showHint && (
+          <div className="mt-6 p-2 bg-gray-100 rounded">
+            <p className="text-sm text-gray-700">
+              {questions[currentQuestionIndex].hint}
+            </p>
+          </div>
+        )}
         {selected && (
           <div className="mt-4 p-2 bg-gray-100 rounded">
             <p>Correct answer: {String.fromCharCode(65 + questions[currentQuestionIndex].correct)}</p>
