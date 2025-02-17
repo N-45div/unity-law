@@ -1,94 +1,296 @@
+import { useState } from "react";
+import backgroundImage from '../assets/quizBackground.png';
+import iconImage from '../assets/quizIcon.png';
+import "@fontsource/orbitron/900.css";
+import "@fontsource/pixelify-sans/400.css";
+
+
 const LevelOneQuizPage = () => {
+  const [score, setScore] = useState<number>(0);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
+  const [progressIndex, setProgressIndex] = useState<number>(0);
+  const [selected, setSelected] = useState<boolean>(false);
+  const [showPopup, setShowPopup] = useState<boolean>(false);
+  const [showHint, setShowHint] = useState<boolean>(false);
+  const [hintLimit, setHintLimit] = useState<number>(5);
+  const [hintToggled, setHintToggled] = useState<boolean>(false);
+
+  const questionStyle = {
+    fontFamily: "'Orbitron', sans-serif",
+    fontWeight: 900,
+    fontSize: "45px",
+    color: "white",
+    textTransform: 'uppercase' as 'uppercase',
+    textAlign: "center" as "center",
+    padding: "10px",
+  };
+  const buttonStyle = {
+    fontFamily: "'Pixelify Sans', sans-serif",
+    fontWeight: 400,
+    fontSize: "35px",
+    color: "black",
+    textTransform: 'uppercase' as 'uppercase',
+    textAlign: "center" as "center",
+  }
+
+  const questions = [
+    {
+      question: "1. What is the primary purpose of a document builder?",
+      options: [
+        "To manually type documents faster",
+        "To automate document creation and customization",
+        "To store documents permanently",
+        "To translate documents into different languages",
+      ],
+      correct: 1,
+      hint: "lorem ipsum",
+    },
+    {
+      question: "2. Which of the following features are commonly found in a document builder?",
+      options: [
+        "Real-time collaboration",
+        "Video editing tools",
+        "Template-based document creation",
+        "Handwritten document scanning",
+      ],
+      correct: 0,
+      hint: "lorem ipsum",
+    },
+    {
+      question: "3. Which file formats are commonly supported for exporting documents?",
+      options: ["PDF", "DOCX", "MP4", "JPG"],
+      correct: 1,
+      hint: "lorem ipsum",
+    },
+    {
+      question: "4. What is the key advantage of using document templates?",
+      options: [
+        "They ensure consistency and save time",
+        "They make documents harder to customize",
+        "They require starting from scratch each time",
+        "They increase the size of the document",
+      ],
+      correct: 0,
+      hint: "lorem ipsum",
+    },
+    {
+      question: "5. How does version control help in document building?",
+      options: [
+        "It allows users to track and revert to previous versions",
+        "It prevents any modifications after a document is created",
+        "It helps users collaborate by tracking changes",
+        "It automatically deletes old versions",
+      ],
+      correct: 2,
+      hint: "lorem ipsum",
+    },
+    {
+      question: "6. Why is role-based access control important in a document builder?",
+      options: [
+        "It allows only one user to edit at a time",
+        "It ensures only authorized users can view or edit specific documents",
+        "It prevents documents from being saved",
+        "It removes the need for login credentials",
+      ],
+      correct: 1,
+      hint: "lorem ipsum",
+    },
+    {
+      question: "7. What automation features can a document builder have?",
+      options: [
+        "Auto-fill fields based on user input",
+        "Conditional content based on form responses",
+        "Manual document formatting only",
+        "Static document structure",
+      ],
+      correct: 0,
+      hint: "lorem ipsum",
+    },
+    {
+      question: "8. Which integrations are most useful in a contract document builder?",
+      options: [
+        "E-signature platforms (e.g., DocuSign)",
+        "CRM systems (e.g., Salesforce)",
+        "Social media sharing tools",
+        "Cloud storage services (e.g., Google Drive)",
+      ],
+      correct: 0,
+      hint: "lorem ipsum",
+    },
+    {
+      question: "9. What are the advantages of using dynamic content in a document builder?",
+      options: [
+        "It allows content to change based on external data",
+        "It makes documents harder to edit",
+        "It requires manual updates each time",
+        "It only works for printed documents",
+      ],
+      correct: 0,
+      hint: "lorem ipsum",
+    },
+    {
+      question: "10. What are some challenges in implementing a document builder?",
+      options: [
+        "Ensuring data security and privacy",
+        "Making the document creation process more complex",
+        "Integrating with existing business tools",
+        "Removing automation features to increase manual control",
+      ],
+      correct: 2,
+      hint: "lorem ipsum",
+    },
+  ];
+
+  const handleSelect = (question: number, answer: number) => {
+    setSelected(true);
+    const correct = questions[question].correct;
+    if (correct == answer) {
+      setScore((prevScore) => (prevScore + 10));
+    }
+    else {
+      if (score > 0) {
+        setScore((prevScore) => (prevScore - 5));
+      }
+    }
+    
+  };
+
+  const handleNext = () => {
+    if (selected) {
+      setSelected(false);
+      setShowHint(false);
+      setHintToggled(false);
+      setProgressIndex((prevIndex) => prevIndex + 1);
+      if (currentQuestionIndex < questions.length - 1) {
+        setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
+      } else {
+        setShowPopup(true);
+      }
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+    } else {
+      alert("Please select an option before proceeding.");
+    }
+  };
+
+  const handleHint = () => {
+    if (!showHint && hintLimit > 0) {
+      if (!hintToggled) {
+        setHintLimit((prevLimit) => prevLimit - 1);
+        setHintToggled(true);
+      }
+      setShowHint(true);
+    }
+    else {
+      setShowHint(false);
+    }
+    
+  }
+  
   return (
-    <div className="h-screen bg-red-400">
-      <div>
-        <h2>1. What is the primary purpose of a document builder?</h2>
-        <h1>A) To manually type documents faster</h1>
-        <h1>B) To automate document creation and customization </h1>☑️
-        <h1>C) To store documents permanently</h1>
-        <h1>D) To translate documents into different languages</h1>
-      </div>
-      <div>
-        <h2>
-          2. Which of the following features are commonly found in a document
-          builder?
-        </h2>
-        <h1>A) Real-time collaboration</h1>☑️
-        <h1>B) Video editing tools</h1>
-        <h1>C) Template-based document creation</h1>☑️
-        <h1>D) Handwritten document scanning</h1>
-      </div>
-      <div>
-        <h2>
-          3. Which file formats are commonly supported for exporting documents?
-        </h2>
-        <h1>A) PDF</h1>☑️
-        <h1>B) DOCX</h1>☑️
-        <h1>C) MP4</h1>
-        <h1>D) JPG</h1>
-      </div>
-      <div>
-        <h2>4. What is the key advantage of using document templates?</h2>
-        <h1>A) They ensure consistency and save time</h1>☑️
-        <h1>B) They make documents harder to customize</h1>
-        <h1>C) They require starting from scratch each time</h1>
-        <h1>D) They increase the size of the document</h1>
-      </div>
-      <div>
-        <h2>5. How does version control help in document building?</h2>
-        <h1>A) It allows users to track and revert to previous versions</h1>☑️
-        <h1>B) It prevents any modifications after a document is created</h1>
-        <h1>C) It helps users collaborate by tracking changes</h1>☑️
-        <h1>D) It automatically deletes old versions</h1>
-      </div>
-      <div>
-        <h2>
-          6. Why is role-based access control important in a document builder?
-        </h2>
-        <h1>A) It allows only one user to edit at a time</h1>☑️
-        <h1>
-          B) It ensures only authorized users can view or edit specific
-          documents
-        </h1>
-        <h1>C) It prevents documents from being saved</h1>
-        <h1>D) It removes the need for login credentials</h1>
-      </div>
-      <div>
-        <h2>7. What automation features can a document builder have?</h2>
-        <h1>A) Auto-fill fields based on user input</h1>☑️
-        <h1>B) Conditional content based on form responses</h1>☑️
-        <h1>C) Manual document formatting only</h1>
-        <h1>D) Static document structure</h1>
-      </div>
-      <div>
-        <h2>
-          8. Which integrations are most useful in a contract document builder?
-        </h2>
-        <h1>A) E-signature platforms (e.g., DocuSign)</h1>☑️
-        <h1>B) CRM systems (e.g., Salesforce)</h1>☑️
-        <h1>C) Social media sharing tools</h1>
-        <h1>D) Cloud storage services (e.g., Google Drive)</h1>☑️
-      </div>
-      <div>
-        <h2>
-          9. What are the advantages of using dynamic content in a document
-          builder?
-        </h2>
-        <h1>A) It allows content to change based on external data</h1>☑️
-        <h1>B) It makes documents harder to edit</h1>
-        <h1>C) It requires manual updates each time</h1>
-        <h1>D) It only works for printed documents</h1>
-      </div>
-      <div>
-        <h2>
-          10. What are some challenges in implementing a document builder?
-        </h2>
-        <h1>A) Ensuring data security and privacy</h1>☑️
-        <h1>B) Making the document creation process more complex</h1>
-        <h1>C) Integrating with existing business tools</h1>☑️
-        <h1>D) Removing automation features to increase manual control</h1>
+    <div className="relative h-screen">
+      <div
+        className="relative inset-0 p-6 bg-center"
+        style={{
+          backgroundImage: `url(${backgroundImage})`,
+          backgroundSize: "100% 100%",
+        }}
+      >
+        <img
+          src={iconImage}
+          alt="Icon"
+          className="absolute top-2 left-0 m-0"
+          style={{ width: "200px", height: "200px" }}
+        />
+        <div className="flex items-center mb-4 space-x-4">
+          <div className="w-full bg-gray-300 h-4 rounded relative">
+            <div
+              className="bg-green-500 h-4 rounded"
+              style={{ width: `${progressIndex * 10}%` }}
+            ></div>
+          </div>
+        </div>
+        <div className="mb-15 text-lg text-white flex justify-end space-x-6">
+          <div className="w-fit">Hints Remaining: {hintLimit}</div>
+          <div className="w-fit">Total Score: {score}</div>
+        </div>
+
+        <div key={currentQuestionIndex}>
+          <h2 className="mb-10" style={questionStyle}>{questions[currentQuestionIndex].question}</h2>
+          <div className="grid grid-cols-2 gap-10 h-40">
+            {questions[currentQuestionIndex].options.map((option, oIndex) => (
+              <label key={oIndex} className="flex item-center p-4 cursor-pointer text-black border border-gray-300 rounded-lg bg-gradient-to-r from-yellow-200 to-pink-300">
+                <input
+                  type="radio"
+                  name={`question-${currentQuestionIndex}`}
+                  value={oIndex}
+                  onChange={() => handleSelect(currentQuestionIndex, oIndex)}
+                  className="mr-2"
+                  disabled={selected}
+                />
+                <span>{`${String.fromCharCode(65 + oIndex)}. ${option}`}</span>
+              </label>
+            ))}
+          </div>
+          <button
+            onClick={() => handleHint()}
+            className="mt-10 p-2 bg-blue-500 text-black rounded hover:scale-102 bg-gradient-to-r from-yellow-500 to-[#40E0D0]"
+          >
+            Show Hint
+          </button>
+          {showHint && (
+            <div className="mt-6 p-1 rounded">
+              <p className="text-sm text-white text-bold font-bold">
+                {questions[currentQuestionIndex].hint}
+              </p>
+            </div>
+          )}
+          {selected && (
+            <div className="mt-10 p-2 bg-gray-100 rounded bg-gradient-to-r from-yellow-200 to-pink-300">
+              <p>Correct answer: {String.fromCharCode(65 + questions[currentQuestionIndex].correct)}</p>
+              <p>
+                Incorrect answers: {questions[currentQuestionIndex].options.map((_, i) => i).filter
+                (i => i !== questions[currentQuestionIndex].correct).map
+                (i => String.fromCharCode(65 + i)).join(", ")}
+              </p>
+            </div>
+          )}
+          <div className="mt-5 py-3">
+            <button
+              onClick={() => handleNext()}
+              className="mt-4 p-0.5 bg-blue-500 text-black rounded hover:scale-102 w-90 bg-gradient-to-r from-yellow-500 to-[#40E0D0] block mx-auto"
+            >
+              <div style={buttonStyle}>
+                Continue
+              </div>
+            </button>
+          </div>
+          {showPopup && (
+            <div
+              className="fixed top-0 left-0 w-full h-full flex justify-center items-center bg-opacity-100"
+              style={{
+                backgroundImage: `url(${backgroundImage})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }}
+            >
+              <div className="bg-white p-6 rounded shadow-lg text-center opacity-100">
+                <h2 className="text-xl font-bold mb-4">Quiz Completed!</h2>
+                <p className="text-lg">Final Score: {score}</p>
+                <button onClick={() => {
+                    setShowPopup(false);
+                    window.location.href = "/";
+                  }}
+                  className="mt-4 p-2 bg-red-500 text-white rounded hover:scale-102">Close</button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
+    
   );
 };
 
