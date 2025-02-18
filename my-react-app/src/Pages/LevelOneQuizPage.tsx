@@ -1,9 +1,8 @@
-import { useState } from "react";
-import backgroundImage from '../assets/quizBackground.png';
-import iconImage from '../assets/quizIcon.png';
+import { useState, useEffect } from "react";
+import backgroundImage from "../assets/quizBackground.png";
+import iconImage from "../assets/quizIcon.png";
 import "@fontsource/orbitron/900.css";
 import "@fontsource/pixelify-sans/400.css";
-
 
 const LevelOneQuizPage = () => {
   const [score, setScore] = useState<number>(0);
@@ -15,23 +14,37 @@ const LevelOneQuizPage = () => {
   const [hintLimit, setHintLimit] = useState<number>(5);
   const [hintToggled, setHintToggled] = useState<boolean>(false);
 
+  useEffect(() => {
+    if (selected) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto";
+    }
+
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, [selected]);
+
   const questionStyle = {
     fontFamily: "'Orbitron', sans-serif",
     fontWeight: 900,
-    fontSize: "45px",
-    color: "white",
-    textTransform: 'uppercase' as 'uppercase',
+    color: "#E2E8F0",
+    textShadow:
+      "0 0 10px rgba(129, 140, 248, 0.5), 0 0 20px rgba(129, 140, 248, 0.3)",
+    textTransform: "uppercase" as "uppercase",
     textAlign: "center" as "center",
     padding: "10px",
   };
+
   const buttonStyle = {
     fontFamily: "'Pixelify Sans', sans-serif",
     fontWeight: 400,
-    fontSize: "35px",
-    color: "black",
-    textTransform: 'uppercase' as 'uppercase',
+    color: "#F0F4FF",
+    textTransform: "uppercase" as "uppercase",
     textAlign: "center" as "center",
-  }
+    textShadow: "0 0 5px rgba(129, 140, 248, 0.5)",
+  };
 
   const questions = [
     {
@@ -46,7 +59,8 @@ const LevelOneQuizPage = () => {
       hint: "lorem ipsum",
     },
     {
-      question: "2. Which of the following features are commonly found in a document builder?",
+      question:
+        "2. Which of the following features are commonly found in a document builder?",
       options: [
         "Real-time collaboration",
         "Video editing tools",
@@ -57,7 +71,8 @@ const LevelOneQuizPage = () => {
       hint: "lorem ipsum",
     },
     {
-      question: "3. Which file formats are commonly supported for exporting documents?",
+      question:
+        "3. Which file formats are commonly supported for exporting documents?",
       options: ["PDF", "DOCX", "MP4", "JPG"],
       correct: 1,
       hint: "lorem ipsum",
@@ -85,7 +100,8 @@ const LevelOneQuizPage = () => {
       hint: "lorem ipsum",
     },
     {
-      question: "6. Why is role-based access control important in a document builder?",
+      question:
+        "6. Why is role-based access control important in a document builder?",
       options: [
         "It allows only one user to edit at a time",
         "It ensures only authorized users can view or edit specific documents",
@@ -107,7 +123,8 @@ const LevelOneQuizPage = () => {
       hint: "lorem ipsum",
     },
     {
-      question: "8. Which integrations are most useful in a contract document builder?",
+      question:
+        "8. Which integrations are most useful in a contract document builder?",
       options: [
         "E-signature platforms (e.g., DocuSign)",
         "CRM systems (e.g., Salesforce)",
@@ -118,7 +135,8 @@ const LevelOneQuizPage = () => {
       hint: "lorem ipsum",
     },
     {
-      question: "9. What are the advantages of using dynamic content in a document builder?",
+      question:
+        "9. What are the advantages of using dynamic content in a document builder?",
       options: [
         "It allows content to change based on external data",
         "It makes documents harder to edit",
@@ -129,7 +147,8 @@ const LevelOneQuizPage = () => {
       hint: "lorem ipsum",
     },
     {
-      question: "10. What are some challenges in implementing a document builder?",
+      question:
+        "10. What are some challenges in implementing a document builder?",
       options: [
         "Ensuring data security and privacy",
         "Making the document creation process more complex",
@@ -145,14 +164,12 @@ const LevelOneQuizPage = () => {
     setSelected(true);
     const correct = questions[question].correct;
     if (correct == answer) {
-      setScore((prevScore) => (prevScore + 10));
-    }
-    else {
+      setScore((prevScore) => prevScore + 10);
+    } else {
       if (score > 0) {
-        setScore((prevScore) => (prevScore - 5));
+        setScore((prevScore) => prevScore - 5);
       }
     }
-    
   };
 
   const handleNext = () => {
@@ -182,115 +199,143 @@ const LevelOneQuizPage = () => {
         setHintToggled(true);
       }
       setShowHint(true);
-    }
-    else {
+    } else {
       setShowHint(false);
     }
-    
-  }
-  
+  };
+
   return (
-    <div className="relative h-screen">
+    <div className="min-h-screen w-full overflow-x-hidden">
       <div
-        className="relative inset-0 p-6 bg-center"
+        className="min-h-screen w-full bg-cover bg-center bg-no-repeat relative"
         style={{
           backgroundImage: `url(${backgroundImage})`,
-          backgroundSize: "100% 100%",
+          backgroundColor: "#1E1B4B",
         }}
       >
-        <img
-          src={iconImage}
-          alt="Icon"
-          className="absolute top-2 left-0 m-0"
-          style={{ width: "200px", height: "200px" }}
-        />
-        <div className="flex items-center mb-4 space-x-4">
-          <div className="w-full bg-gray-300 h-4 rounded relative">
-            <div
-              className="bg-green-500 h-4 rounded"
-              style={{ width: `${progressIndex * 10}%` }}
-            ></div>
+        <div className="absolute inset-0 flex flex-col p-3 md:p-6">
+          {/* Progress bar and icon */}
+          <div className="flex-none">
+            <img
+              src={iconImage}
+              alt="Icon"
+              className="absolute -top-2 left-0 m-0 w-32 h-32 md:w-48 md:h-48 lg:w-52 lg:h-52"
+            />
+            <div className="flex items-center mb-4 space-x-4 mt-16 md:mt-0">
+              <div className="w-full bg-opacity-30 bg-indigo-300 h-3 md:h-4 rounded-full overflow-hidden border border-indigo-500/30">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-indigo-400 to-violet-500 transition-all duration-300"
+                  style={{ width: `${progressIndex * 10}%` }}
+                ></div>
+              </div>
+            </div>
+            <div className="mb-4 text-sm md:text-lg flex justify-end space-x-4 md:space-x-6 text-indigo-200 font-semibold">
+              <div className="w-fit">Hints: {hintLimit}</div>
+              <div className="w-fit">Score: {score}</div>
+            </div>
           </div>
-        </div>
-        <div className="mb-15 text-lg text-white flex justify-end space-x-6">
-          <div className="w-fit">Hints Remaining: {hintLimit}</div>
-          <div className="w-fit">Total Score: {score}</div>
-        </div>
 
-        <div key={currentQuestionIndex}>
-          <h2 className="mb-10" style={questionStyle}>{questions[currentQuestionIndex].question}</h2>
-          <div className="grid grid-cols-2 gap-10 h-40">
-            {questions[currentQuestionIndex].options.map((option, oIndex) => (
-              <label key={oIndex} className="flex item-center p-4 cursor-pointer text-black border border-gray-300 rounded-lg bg-gradient-to-r from-yellow-200 to-pink-300">
-                <input
-                  type="radio"
-                  name={`question-${currentQuestionIndex}`}
-                  value={oIndex}
-                  onChange={() => handleSelect(currentQuestionIndex, oIndex)}
-                  className="mr-2"
-                  disabled={selected}
-                />
-                <span>{`${String.fromCharCode(65 + oIndex)}. ${option}`}</span>
-              </label>
-            ))}
+          {/* Question section */}
+          <div className="flex-1 flex flex-col max-h-full md:max-h-[calc(100vh-280px)] overflow-y-aut md:mt-10">
+            <div key={currentQuestionIndex} className="flex-1 flex flex-col">
+              <h2 className="mb-4 md:mb-8 text-xl md:text-3xl lg:text-4xl" style={questionStyle}>
+                {questions[currentQuestionIndex].question}
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6 mb-4 md:mb-6">
+                {questions[currentQuestionIndex].options.map((option, oIndex) => (
+                  <label
+                    key={oIndex}
+                    className="flex items-center p-3 md:p-4 cursor-pointer border-2 border-indigo-500 rounded-lg 
+                             bg-gradient-to-r from-indigo-900/80 to-violet-900/80 backdrop-blur-sm
+                             hover:from-indigo-800/90 hover:to-violet-800/90 transition-all duration-300
+                             text-white shadow-lg shadow-indigo-500/20 text-sm md:text-base"
+                  >
+                    <input
+                      type="radio"
+                      name={`question-${currentQuestionIndex}`}
+                      value={oIndex}
+                      onChange={() => handleSelect(currentQuestionIndex, oIndex)}
+                      className="mr-2"
+                      disabled={selected}
+                    />
+                    <span>{`${String.fromCharCode(65 + oIndex)}. ${option}`}</span>
+                  </label>
+                ))}
+              </div>
+
+              <button
+                onClick={() => handleHint()}
+                className="mt-2 md:mt-4 px-4 md:px-6 py-2 md:py-3 bg-gradient-to-r from-indigo-500 to-violet-500 text-white rounded-lg
+                         hover:from-indigo-400 hover:to-violet-400 transition-all duration-300 shadow-lg shadow-indigo-500/30 cursor-pointer 
+                         w-24 md:w-32 lg:w-40 text-sm md:text-base"
+              >
+                Show Hint
+              </button>
+
+              {showHint && (
+                <div className="mt-2 md:mt-4 p-3 md:p-4 rounded-lg bg-indigo-900/50 backdrop-blur-sm border border-indigo-500 w-full md:w-max">
+                  <p className="text-indigo-200 font-bold text-sm md:text-base">
+                    {questions[currentQuestionIndex].hint}
+                  </p>
+                </div>
+              )}
+
+              {selected && (
+                <div className="mt-2 w-max md:mt-4 p-3 md:p-4 rounded-lg bg-gradient-to-r from-indigo-900/80 to-violet-900/80 backdrop-blur-sm
+                              border-2 border-indigo-500 text-white text-sm md:text-base">
+                  <p>
+                    Correct answer:{" "}
+                    {String.fromCharCode(65 + questions[currentQuestionIndex].correct)}
+                  </p>
+                  <p>
+                    Incorrect answers:{" "}
+                    {questions[currentQuestionIndex].options
+                      .map((_, i) => i)
+                      .filter((i) => i !== questions[currentQuestionIndex].correct)
+                      .map((i) => String.fromCharCode(65 + i))
+                      .join(", ")}
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
-          <button
-            onClick={() => handleHint()}
-            className="mt-10 p-2 bg-blue-500 text-black rounded hover:scale-102 bg-gradient-to-r from-yellow-500 to-[#40E0D0]"
-          >
-            Show Hint
-          </button>
-          {showHint && (
-            <div className="mt-6 p-1 rounded">
-              <p className="text-sm text-white text-bold font-bold">
-                {questions[currentQuestionIndex].hint}
-              </p>
-            </div>
-          )}
-          {selected && (
-            <div className="mt-10 p-2 bg-gray-100 rounded bg-gradient-to-r from-yellow-200 to-pink-300">
-              <p>Correct answer: {String.fromCharCode(65 + questions[currentQuestionIndex].correct)}</p>
-              <p>
-                Incorrect answers: {questions[currentQuestionIndex].options.map((_, i) => i).filter
-                (i => i !== questions[currentQuestionIndex].correct).map
-                (i => String.fromCharCode(65 + i)).join(", ")}
-              </p>
-            </div>
-          )}
-          <div className="mt-5 py-3">
+
+          {/* Continue button */}
+          <div className="flex-none h-20 md:h-30 flex items-center justify-center mt-4">
             <button
               onClick={() => handleNext()}
-              className="mt-4 p-0.5 bg-blue-500 text-black rounded hover:scale-102 w-90 bg-gradient-to-r from-yellow-500 to-[#40E0D0] block mx-auto"
+              className="px-6 md:px-8 py-2 md:py-3 bg-gradient-to-r from-indigo-500 to-violet-500 rounded-lg
+                       hover:from-indigo-400 hover:to-violet-400 transition-all duration-300
+                       shadow-lg shadow-indigo-500/30 cursor-pointer"
             >
-              <div style={buttonStyle}>
-                Continue
-              </div>
+              <div className="text-xl md:text-2xl lg:text-3xl" style={buttonStyle}>Continue</div>
             </button>
           </div>
-          {showPopup && (
-            <div
-              className="fixed top-0 left-0 w-full h-full flex justify-center items-center bg-opacity-100"
-              style={{
-                backgroundImage: `url(${backgroundImage})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-              }}
-            >
-              <div className="bg-white p-6 rounded shadow-lg text-center opacity-100">
-                <h2 className="text-xl font-bold mb-4">Quiz Completed!</h2>
-                <p className="text-lg">Final Score: {score}</p>
-                <button onClick={() => {
-                    setShowPopup(false);
-                    window.location.href = "/";
-                  }}
-                  className="mt-4 p-2 bg-red-500 text-white rounded hover:scale-102">Close</button>
-              </div>
-            </div>
-          )}
         </div>
       </div>
+
+      {/* Completion popup */}
+      {showPopup && (
+        <div className="fixed inset-0 flex justify-center items-center bg-black/50 backdrop-blur-md p-4">
+          <div className="bg-gradient-to-r from-indigo-900 to-violet-900 p-6 md:p-8 rounded-lg shadow-2xl border-2 border-indigo-500 w-full max-w-sm md:max-w-md">
+            <h2 className="text-xl md:text-2xl font-bold mb-4 text-white">
+              Quiz Completed!
+            </h2>
+            <p className="text-lg md:text-xl text-indigo-200">Final Score: {score}</p>
+            <button
+              onClick={() => {
+                setShowPopup(false);
+                window.location.href = "/";
+              }}
+              className="mt-4 md:mt-6 px-4 md:px-6 py-2 bg-gradient-to-r from-indigo-500 to-violet-500 text-white rounded-lg
+                      hover:from-indigo-400 hover:to-violet-400 transition-all duration-300 cursor-pointer text-sm md:text-base"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
-    
   );
 };
 
