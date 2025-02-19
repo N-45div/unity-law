@@ -213,42 +213,45 @@ const LevelOneQuizPage = () => {
           backgroundColor: "#1E1B4B",
         }}
       >
-        <div className="absolute inset-0 flex flex-col p-3 md:p-6">
-          {/* Progress bar and icon */}
+        <div className="relative inset-0 flex flex-col h-full p-3 sm:p-4 md:p-6 lg:p-8">
+          {/* Header section with progress bar and icon */}
           <div className="flex-none">
             <img
               src={iconImage}
               alt="Icon"
-              className="absolute -top-2 left-0 m-0 w-32 h-32 md:w-48 md:h-48 lg:w-52 lg:h-52"
+              className="absolute -top- left-0 m-0 w-24 h-24 sm:w-20 sm:h-20 md:w-32 md:h-32 lg:w-40 lg:h-40 xl:w-48 xl:h-48"
             />
-            <div className="flex items-center mb-4 space-x-4 mt-16 md:mt-0">
-              <div className="w-full bg-opacity-30 bg-indigo-300 h-3 md:h-4 rounded-full overflow-hidden border border-indigo-500/30">
+            <div className="flex items-center mb-2 space-x-4 mt-16 sm:mt-12 md:mt-8 lg:mt-4">
+              <div className="w-full bg-opacity-30 bg-indigo-300 h-2 sm:h-3 md:h-4 rounded-full overflow-hidden border border-indigo-500/30">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-indigo-400 to-violet-500 transition-all duration-300"
                   style={{ width: `${progressIndex * 10}%` }}
                 ></div>
               </div>
             </div>
-            <div className="mb-4 text-sm md:text-lg flex justify-end space-x-4 md:space-x-6 text-indigo-200 font-semibold">
+            <div className="mb-2 text-xs sm:text-sm md:text-base lg:text-lg flex justify-end space-x-4 text-indigo-200 font-semibold">
               <div className="w-fit">Hints: {hintLimit}</div>
               <div className="w-fit">Score: {score}</div>
             </div>
           </div>
 
           {/* Question section */}
-          <div className="flex-1 flex flex-col max-h-full md:max-h-[calc(100vh-280px)] overflow-y-aut md:mt-10">
+          <div className="flex-1 flex flex-col min-h-0 overflow-y-auto mb-4">
             <div key={currentQuestionIndex} className="flex-1 flex flex-col">
-              <h2 className="mb-4 md:mb-8 text-xl md:text-3xl lg:text-4xl" style={questionStyle}>
+              <h2 
+                className="mb-3 sm:mb-4 md:mb-6 text-base sm:text-lg md:text-2xl lg:text-3xl xl:text-4xl px-2 sm:px-4" 
+                style={questionStyle}
+              >
                 {questions[currentQuestionIndex].question}
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6 mb-4 md:mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3 md:gap-4 lg:gap-6 mb-3 md:mb-6 px-2 sm:px-4">
                 {questions[currentQuestionIndex].options.map((option, oIndex) => (
                   <label
                     key={oIndex}
-                    className="flex items-center p-3 md:p-4 cursor-pointer border-2 border-indigo-500 rounded-lg 
+                    className="flex items-center p-2 sm:p-3 md:p-4 cursor-pointer border-2 border-indigo-500 rounded-lg 
                              bg-gradient-to-r from-indigo-900/80 to-violet-900/80 backdrop-blur-sm
                              hover:from-indigo-800/90 hover:to-violet-800/90 transition-all duration-300
-                             text-white shadow-lg shadow-indigo-500/20 text-sm md:text-base"
+                             text-white shadow-lg shadow-indigo-500/20"
                   >
                     <input
                       type="radio"
@@ -258,57 +261,59 @@ const LevelOneQuizPage = () => {
                       className="mr-2"
                       disabled={selected}
                     />
-                    <span>{`${String.fromCharCode(65 + oIndex)}. ${option}`}</span>
+                    <span className="text-xs sm:text-sm md:text-base">{`${String.fromCharCode(65 + oIndex)}. ${option}`}</span>
                   </label>
                 ))}
               </div>
 
-              <button
-                onClick={() => handleHint()}
-                className="mt-2 md:mt-4 px-4 md:px-6 py-2 md:py-3 bg-gradient-to-r from-indigo-500 to-violet-500 text-white rounded-lg
-                         hover:from-indigo-400 hover:to-violet-400 transition-all duration-300 shadow-lg shadow-indigo-500/30 cursor-pointer 
-                         w-24 md:w-32 lg:w-40 text-sm md:text-base"
-              >
-                Show Hint
-              </button>
+              <div className="flex flex-col space-y-2 px-2 sm:px-4">
+                <button
+                  onClick={() => handleHint()}
+                  className="px-3 sm:px-4 md:px-6 py-2 md:py-3 bg-gradient-to-r from-indigo-500 to-violet-500 text-white rounded-lg
+                           hover:from-indigo-400 hover:to-violet-400 transition-all duration-300 shadow-lg shadow-indigo-500/30 
+                           cursor-pointer w-20 sm:w-24 md:w-32 text-xs sm:text-sm md:text-base"
+                >
+                  Show Hint
+                </button>
 
-              {showHint && (
-                <div className="mt-2 md:mt-4 p-3 md:p-4 rounded-lg bg-indigo-900/50 backdrop-blur-sm border border-indigo-500 w-full md:w-max">
-                  <p className="text-indigo-200 font-bold text-sm md:text-base">
-                    {questions[currentQuestionIndex].hint}
-                  </p>
-                </div>
-              )}
+                {showHint && (
+                  <div className="p-2 sm:p-3 md:p-4 rounded-lg bg-indigo-900/50 backdrop-blur-sm border border-indigo-500 w-full md:w-max">
+                    <p className="text-indigo-200 font-bold text-xs sm:text-sm md:text-base">
+                      {questions[currentQuestionIndex].hint}
+                    </p>
+                  </div>
+                )}
 
-              {selected && (
-                <div className="mt-2 w-max md:mt-4 p-3 md:p-4 rounded-lg bg-gradient-to-r from-indigo-900/80 to-violet-900/80 backdrop-blur-sm
-                              border-2 border-indigo-500 text-white text-sm md:text-base">
-                  <p>
-                    Correct answer:{" "}
-                    {String.fromCharCode(65 + questions[currentQuestionIndex].correct)}
-                  </p>
-                  <p>
-                    Incorrect answers:{" "}
-                    {questions[currentQuestionIndex].options
-                      .map((_, i) => i)
-                      .filter((i) => i !== questions[currentQuestionIndex].correct)
-                      .map((i) => String.fromCharCode(65 + i))
-                      .join(", ")}
-                  </p>
-                </div>
-              )}
+                {selected && (
+                  <div className="p-2 sm:p-3 md:p-4 md:w-max rounded-lg bg-gradient-to-r from-indigo-900/80 to-violet-900/80 backdrop-blur-sm
+                                border-2 border-indigo-500 text-white text-xs sm:text-sm md:text-base">
+                    <p>
+                      Correct answer:{" "}
+                      {String.fromCharCode(65 + questions[currentQuestionIndex].correct)}
+                    </p>
+                    <p>
+                      Incorrect answers:{" "}
+                      {questions[currentQuestionIndex].options
+                        .map((_, i) => i)
+                        .filter((i) => i !== questions[currentQuestionIndex].correct)
+                        .map((i) => String.fromCharCode(65 + i))
+                        .join(", ")}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
           {/* Continue button */}
-          <div className="flex-none h-20 md:h-30 flex items-center justify-center mt-4">
+          <div className="flex-none mt-4 sm:mt-5 md:mt-6 lg:mt-7 mx-auto">
             <button
               onClick={() => handleNext()}
-              className="px-6 md:px-8 py-2 md:py-3 bg-gradient-to-r from-indigo-500 to-violet-500 rounded-lg
+              className="w-auto px-4 sm:px-6 md:px-8 py-2 md:py-3 bg-gradient-to-r from-indigo-500 to-violet-500 rounded-lg
                        hover:from-indigo-400 hover:to-violet-400 transition-all duration-300
                        shadow-lg shadow-indigo-500/30 cursor-pointer"
             >
-              <div className="text-xl md:text-2xl lg:text-3xl" style={buttonStyle}>Continue</div>
+              <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl" style={buttonStyle}>Continue</div>
             </button>
           </div>
         </div>
@@ -317,18 +322,18 @@ const LevelOneQuizPage = () => {
       {/* Completion popup */}
       {showPopup && (
         <div className="fixed inset-0 flex justify-center items-center bg-black/50 backdrop-blur-md p-4">
-          <div className="bg-gradient-to-r from-indigo-900 to-violet-900 p-6 md:p-8 rounded-lg shadow-2xl border-2 border-indigo-500 w-full max-w-sm md:max-w-md">
-            <h2 className="text-xl md:text-2xl font-bold mb-4 text-white">
+          <div className="bg-gradient-to-r from-indigo-900 to-violet-900 p-4 sm:p-6 md:p-8 rounded-lg shadow-2xl border-2 border-indigo-500 w-full max-w-xs sm:max-w-sm md:max-w-md">
+            <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-4 text-white">
               Quiz Completed!
             </h2>
-            <p className="text-lg md:text-xl text-indigo-200">Final Score: {score}</p>
+            <p className="text-base sm:text-lg md:text-xl text-indigo-200">Final Score: {score}</p>
             <button
               onClick={() => {
                 setShowPopup(false);
                 window.location.href = "/";
               }}
-              className="mt-4 md:mt-6 px-4 md:px-6 py-2 bg-gradient-to-r from-indigo-500 to-violet-500 text-white rounded-lg
-                      hover:from-indigo-400 hover:to-violet-400 transition-all duration-300 cursor-pointer text-sm md:text-base"
+              className="mt-4 md:mt-6 px-3 sm:px-4 md:px-6 py-2 bg-gradient-to-r from-indigo-500 to-violet-500 text-white rounded-lg
+                      hover:from-indigo-400 hover:to-violet-400 transition-all duration-300 cursor-pointer text-xs sm:text-sm md:text-base"
             >
               Close
             </button>
