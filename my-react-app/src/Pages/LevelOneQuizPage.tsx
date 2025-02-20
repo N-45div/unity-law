@@ -48,115 +48,122 @@ const LevelOneQuizPage = () => {
 
   const questions = [
     {
-      question: "1. What is the primary purpose of a document builder?",
-      options: [
-        "To manually type documents faster",
-        "To automate document creation and customization",
-        "To store documents permanently",
-        "To translate documents into different languages",
-      ],
-      correct: 1,
-      hint: "lorem ipsum",
-    },
-    {
       question:
-        "2. Which of the following features are commonly found in a document builder?",
+        '1.  What is the best way to automate a placeholder like "Company Name" in an advanced CLM tool like Contract Coder?',
       options: [
-        "Real-time collaboration",
-        "Video editing tools",
-        "Template-based document creation",
-        "Handwritten document scanning",
-      ],
-      correct: 0,
-      hint: "lorem ipsum",
-    },
-    {
-      question:
-        "3. Which file formats are commonly supported for exporting documents?",
-      options: ["PDF", "DOCX", "MP4", "JPG"],
-      correct: 1,
-      hint: "lorem ipsum",
-    },
-    {
-      question: "4. What is the key advantage of using document templates?",
-      options: [
-        "They ensure consistency and save time",
-        "They make documents harder to customize",
-        "They require starting from scratch each time",
-        "They increase the size of the document",
-      ],
-      correct: 0,
-      hint: "lorem ipsum",
-    },
-    {
-      question: "5. How does version control help in document building?",
-      options: [
-        "It allows users to track and revert to previous versions",
-        "It prevents any modifications after a document is created",
-        "It helps users collaborate by tracking changes",
-        "It automatically deletes old versions",
+        " Put curly braces around the placeholders",
+        "Use square braces around the placeholder",
+        " Identify a placeholder and click on the placeholder button to automate it",
+        "Write the company name in all caps for emphasis",
       ],
       correct: 2,
-      hint: "lorem ipsum",
+      hint: "Remember what you learned in the previous video about automating placeholders",
     },
     {
       question:
-        "6. Why is role-based access control important in a document builder?",
+        "2.  How can you ensure automated documents retrieve the latest data from an external system (e.g., CRM, ERP)?",
       options: [
-        "It allows only one user to edit at a time",
-        "It ensures only authorized users can view or edit specific documents",
-        "It prevents documents from being saved",
-        "It removes the need for login credentials",
+        " Manually check and update data in the document before finalizing",
+        " Integrate API calls or database queries to pull real-time data dynamically",
+        " Export data from external systems and copy-paste it into the document",
+        "Set a reminder to periodically refresh data by re-importing it manually",
       ],
       correct: 1,
-      hint: "lorem ipsum",
-    },
-    {
-      question: "7. What automation features can a document builder have?",
-      options: [
-        "Auto-fill fields based on user input",
-        "Conditional content based on form responses",
-        "Manual document formatting only",
-        "Static document structure",
-      ],
-      correct: 0,
-      hint: "lorem ipsum",
+      hint: " Consider how integration with other tools can improve efficiency and accuracy",
     },
     {
       question:
-        "8. Which integrations are most useful in a contract document builder?",
+        "3.  How do you dynamically insert repeating sections (e.g., multiple signatories or payment terms)?",
       options: [
-        "E-signature platforms (e.g., DocuSign)",
-        "CRM systems (e.g., Salesforce)",
-        "Social media sharing tools",
-        "Cloud storage services (e.g., Google Drive)",
+        "Copy-paste the required section multiple times as needed",
+        " Use a loop to generate multiple entries based on a dataset",
+        "Leave placeholders and ask users to fill them in manually",
+        " Create separate templates for different numbers of repeating sections",
       ],
-      correct: 0,
-      hint: "lorem ipsum",
+      correct: 1,
+      hint: "Think about how loops can generate structured data efficiently",
     },
     {
-      question:
-        "9. What are the advantages of using dynamic content in a document builder?",
+      question: "4.  Why use automation in legal documents?",
       options: [
-        "It allows content to change based on external data",
-        "It makes documents harder to edit",
-        "It requires manual updates each time",
-        "It only works for printed documents",
-      ],
-      correct: 0,
-      hint: "lorem ipsum",
-    },
-    {
-      question:
-        "10. What are some challenges in implementing a document builder?",
-      options: [
-        "Ensuring data security and privacy",
-        "Making the document creation process more complex",
-        "Integrating with existing business tools",
-        "Removing automation features to increase manual control",
+        " To reduce human error",
+        "To save time on repetitive tasks",
+        " Both A and B",
+        "To increase document length for billing purposes",
       ],
       correct: 2,
-      hint: "lorem ipsum",
+      hint: "Think about the main benefits that automation brings to legal workflows",
+    },
+    {
+      question:
+        "5.  How can you ensure tasks are assigned to the right team members?",
+      options: [
+        "Manually assign tasks based on availability",
+        "Use role-based assignment rules to automatically assign tasks",
+        "Ask team members to pick up tasks themselves",
+        " Assign all tasks to a single team member for efficiency",
+      ],
+      correct: 1,
+      hint: "Consider a method that reduces manual effort and ensures tasks are assigned based on predefined criteria",
+    },
+    {
+      question:
+        "6. How can you ensure a contract automatically selects the correct jurisdiction based on the client’s location?",
+      options: [
+        "Ask the user to manually choose the jurisdiction each time",
+        "Use a variable that pulls the jurisdiction based on the client’s location data",
+        " Include all possible jurisdictions and let the user delete the irrelevant ones",
+        "Hardcode a default jurisdiction for all contracts",
+      ],
+      correct: 1,
+      hint: "Automation should adapt based on client-specific details to reduce manual edits",
+    },
+    {
+      question: "7. What is the best way to dynamically insert different payment terms based on contract type?",
+      options: [
+        "Use a conditional rule that selects the relevant payment terms automatically",
+        " Manually type the payment terms after generating the document",
+        "Include all payment terms in the contract and delete the unnecessary ones",
+        "Leave a blank space and ask the user to fill in the payment terms later",
+      ],
+      correct: 0,
+      hint: " Conditional logic helps automate document variations based on contract type",
+    },
+    {
+      question:
+        "8.  What is the best way to generate a report of all contracts expiring within the next 30 days?",
+      options: [
+        " Set up a scheduled workflow that filters and extracts contracts expiring soon",
+        "Open each contract manually and check the expiration date",
+        "Ask employees to maintain a spreadsheet of contract expiration dates",
+        "Review contracts only when a renewal request comes in",
+      ],
+      correct: 0,
+      hint: "Automated workflows help monitor and manage contract deadlines efficiently.",
+    },
+    {
+      question:
+        "9. How can you automatically notify stakeholders when a contract reaches a critical stage?",
+      options: [
+        "Set up an automated workflow to send notifications based on contract milestones",
+        "Assign someone to manually send emails when updates are needed",
+        "Check contract statuses periodically and inform stakeholders if necessary",
+        " Rely on stakeholders to follow up on their own without automated reminders",
+      ],
+      correct: 0,
+      hint: "Automated notifications keep stakeholders informed without manual intervention",
+    },
+    {
+      question:
+        "10. How can you automatically pre-fill customer details in a contract?",
+      options: [
+        " Integrate the contract automation system with a CRM to pull customer data",
+        " Manually type the customer details for each new contract",
+        "Copy and paste customer details from previous contracts",
+        "Leave the fields blank and ask the user to fill them in before sending",
+      ],
+      correct: 0,
+      hint: "Integrating external systems eliminates manual data entry and improves accuracy",
     },
   ];
 
