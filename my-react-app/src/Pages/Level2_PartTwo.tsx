@@ -2,9 +2,8 @@ import { FaPenToSquare } from "react-icons/fa6";
 import { TbSettingsMinus } from "react-icons/tb";
 import { TbSettingsPlus } from "react-icons/tb";
 import { ImLoop2 } from "react-icons/im";
-import { FaTools } from "react-icons/fa";
-
 import { useState } from "react";
+import Navbar from "../components/Navbar";
 
 const icons = [
   { icon: <FaPenToSquare />, label: "Edit PlaceHolder" },
@@ -14,50 +13,10 @@ const icons = [
 ];
 const LevelTwoPart_Two = () => {
   const [tooltip, setTooltip] = useState<string | null>(null);
-  const [activeButton, setActiveButton] = useState<string | null>("Document");
 
   return (
     <div className="w-full min-h-screen bg-gradient-to-r from-green-100 via-purple-100 to-blue-100">
-      <div className="w-full bg-lime-300 shadow-md">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between">
-            <div className="flex-1 flex">
-              {["Document", "Questionnaire", "Live Document Generation"].map(
-                (label) => (
-                  <button
-                    key={label}
-                    className={`px-8 py-3 cursor-pointer bg-lime-300 font-medium border-r border-lime-400 hover:bg-lime-400 transition-colors duration-200 flex items-center space-x-2 ${
-                      activeButton === label ? "text-gray-700" : "text-blue-600"
-                    }`}
-                    onClick={() => setActiveButton(label)}
-                  >
-                    <span>{label}</span>
-                  </button>
-                )
-              )}
-            </div>
-            <div className="flex items-center px-6 space-x-6">
-              <span className="text-blue-600 text-xl font-semibold tracking-wide">
-                Contractual
-              </span>
-              <div className="relative flex items-center">
-                <button
-                  className="p-2 rounded-full cursor-pointer hover:bg-lime-400 transition-colors duration-200 flex items-center justify-center text-2xl"
-                  onMouseEnter={() => setTooltip("Settings")}
-                  onMouseLeave={() => setTooltip(null)}
-                >
-                  <FaTools />
-                </button>
-                {tooltip === "Settings" && (
-                  <div className="absolute  top-full mb-2 px-3 py-1 text-sm text-white bg-gray-500 rounded shadow-md whitespace-nowrap">
-                    Settings
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <Navbar />
 
       <div className="flex justify-end px-6 py-3 space-x-6 relative">
         {icons.map(({ icon, label }, index) => (
