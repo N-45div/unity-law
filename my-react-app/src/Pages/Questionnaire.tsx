@@ -27,14 +27,48 @@ const DivWithDropdown: React.FC<DivWithDropdownProps> = ({ selectedType, setSele
             </button>
             <div className="relative w-200 h-40 bg-lime-300 rounded-lg shadow-md flex flex-col items-center justify-center text-black text-lg font-semibold p-4">      
                 <div className="relative w-full flex items-center space-x-2">
-                    <div className="h-0.5 w-2/5 bg-black absolute left-0"></div>
-                    <input
-                        type="text"
-                        value={text}
-                        onChange={(e) => setText(e.target.value)}
-                        className="px-2 py-1 text-sm border-none bg-transparent outline-none w-2/5 relative z-10 top-[-14px] max-w-full overflow-hidden text-ellipsis"
-                        placeholder="Enter text"
-                    />
+                    {selectedType !== "Radio" && (
+                        <div className="h-0.5 w-2/5 bg-black absolute left-0"></div>
+                    )}
+                    {selectedType === "Radio" ? (
+                        <div className="flex space-x-20 relative z-10 ml-25">
+                            <label className="flex items-center space-x-1 cursor-pointer">
+                                <input
+                                    type="radio"
+                                    value="Yes"
+                                    checked={text === "Yes"}
+                                    onChange={() => setText("Yes")}
+                                    className="cursor-pointer"
+                                />
+                                <span>Yes</span>
+                            </label>
+                            <label className="flex items-center space-x-1 cursor-pointer">
+                                <input
+                                    type="radio"
+                                    value="No"
+                                    checked={text === "No"}
+                                    onChange={() => setText("No")}
+                                    className="cursor-pointer"
+                                />
+                                <span>No</span>
+                            </label>
+                        </div>
+                    ) : (
+                        <input
+                            type="text"
+                            value={text}
+                            onChange={(e) => {
+                                const value = e.target.value;
+                                if (selectedType === "Number" && /^[0-9]*$/.test(value)) {
+                                    setText(value);
+                                } else if (selectedType !== "Number") {
+                                    setText(value);
+                                }
+                            }}
+                            className="px-2 py-1 text-sm border-none bg-transparent outline-none w-2/5 relative z-10 top-[-14px] max-w-full overflow-hidden text-ellipsis"
+                            placeholder={selectedType === "Number" ? "Enter number" : "Enter text"}
+                        />
+                    )}
                 </div>
 
                 <div className="absolute top-1/2 right-3 transform -translate-y-1/2 flex items-center space-x-2">
