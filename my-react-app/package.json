@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource/orbitron": "^5.1.1",
+    "@fontsource/pixelify-sans": "^5.1.1",
     "@tailwindcss/vite": "^4.0.6",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.5.2",
