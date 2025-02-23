@@ -13,7 +13,8 @@ const Navbar = () => {
       "/Level-Two-Part-Two": "Document",
       "/Questionnaire": "Questionnaire",
       "/Live_Generation": "Live Document Generation",
-      "/Live_Generation_2": "Live Document Generation"
+      "/Live_Generation_2": "Live Document Generation",
+      "/Finish": "Generated Document", // For the Finish page, show this label
     };
 
     setActiveButton(routes[location.pathname] || null);
@@ -24,9 +25,12 @@ const Navbar = () => {
       Document: "/Level-Two-Part-Two",
       Questionnaire: "/Questionnaire",
       "Live Document Generation": "/Live_Generation",
+      "Generated Document": "/Finish", // This won't actually be clicked on /Finish
     };
 
-    navigation(routes[label]);
+    if (label !== "Generated Document") {
+      navigation(routes[label]);
+    }
   };
 
   return (
@@ -34,8 +38,8 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between">
           <div className="flex-1 flex">
-            {["Document", "Questionnaire", "Live Document Generation"].map(
-              (label) => (
+            {location.pathname !== "/Finish" ? (
+              ["Document", "Questionnaire", "Live Document Generation"].map((label) => (
                 <button
                   key={label}
                   className={`px-8 py-3 cursor-pointer bg-lime-300 font-medium border-r border-lime-400 hover:bg-lime-400 transition-colors duration-200 flex items-center space-x-2 ${
@@ -45,7 +49,13 @@ const Navbar = () => {
                 >
                   <span>{label}</span>
                 </button>
-              )
+              ))
+            ) : (
+              <div className="flex-1 flex justify-end pr-75">
+                <span className="px-8 py-3 bg-lime-300 font-medium text-blue-600 flex items-center space-x-2 text-xl">
+                  <span>Generated Document</span>
+                </span>
+              </div>
             )}
           </div>
           <div className="flex items-center px-6 space-x-6">

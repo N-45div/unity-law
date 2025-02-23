@@ -1,15 +1,21 @@
 import Navbar from "../components/Navbar";
 import { FaChevronDown, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { useState } from "react";
+import { useQuestionType } from "../context/QuestionTypeContext";
 
-const DivWithDropdown = () => {
+interface DivWithDropdownProps {
+    selectedType: string | null; 
+    setSelectedType: (type: string) => void; 
+}
+
+const DivWithDropdown: React.FC<DivWithDropdownProps> = ({ selectedType, setSelectedType }) => {
     const [isOpen, setIsOpen] = useState(false);
-    const [selectedItem, setSelectedItem] = useState<string>("Select a question");
+    // const [selectedItem, setSelectedItem] = useState<string>("Select a question type");
     const [text, setText] = useState<string>("");
 
     const handleSelect = (item: string) => {
-        setSelectedItem(item);
-        setIsOpen(false); // Close dropdown after selection
+        setSelectedType(item);
+        setIsOpen(false); 
     };
 
     return (
@@ -21,10 +27,7 @@ const DivWithDropdown = () => {
             </button>
             <div className="relative w-200 h-40 bg-lime-300 rounded-lg shadow-md flex flex-col items-center justify-center text-black text-lg font-semibold p-4">      
                 <div className="relative w-full flex items-center space-x-2">
-                    {/* Left Horizontal Line */}
                     <div className="h-0.5 w-2/5 bg-black absolute left-0"></div>
-
-                    {/* Text Input on the Line */}
                     <input
                         type="text"
                         value={text}
@@ -34,9 +37,8 @@ const DivWithDropdown = () => {
                     />
                 </div>
 
-                {/* Dropdown Button (Arrow + Selected Item) */}
                 <div className="absolute top-1/2 right-3 transform -translate-y-1/2 flex items-center space-x-2">
-                    <span className="text-black text-sm">{selectedItem}</span>
+                    <span className="text-black text-sm">{selectedType ?? "Select a question type"}</span>
                     <button
                         className="text-black text-xl transition-transform duration-200 hover:scale-110"
                         onClick={() => setIsOpen(!isOpen)}
@@ -44,12 +46,10 @@ const DivWithDropdown = () => {
                         <FaChevronDown className={`${isOpen ? "rotate-180" : "rotate-0"} transition-transform duration-200`} />
                     </button>
                 </div>
-
-                {/* Dropdown Menu (Visible when isOpen is true) */}
                 {isOpen && (
                     <div className="absolute top-25 right-3 bg-white text-black rounded-md shadow-md w-40 mt-1 z-10">
                         <ul className="text-sm">
-                            {["Q1", "Q2", "Q3"].map((item) => (
+                            {["Text", "Number", "Radio"].map((item) => (
                                 <li
                                     key={item}
                                     className="px-4 py-2 hover:bg-gray-200 cursor-pointer"
@@ -68,21 +68,19 @@ const DivWithDropdown = () => {
 };
 
 const Questionnaire = () => {
-    const [leftActive, setLeftActive] = useState(true); // Tracks if left label is active
+    const [leftActive, setLeftActive] = useState(true); 
     const [rightActive, setRightActive] = useState(false);
+    const { firstSelectedType, secondSelectedType, setFirstSelectedType, setSecondSelectedType } = useQuestionType();
     return (
         <div className="min-h-screen flex flex-col bg-gradient-to-r from-green-100 via-purple-100 to-blue-100 relative">
             <Navbar />
             <div className="absolute top-16 right-6 w-80 h-10 bg-lime-300 rounded-lg shadow-md flex items-center justify-center text-black text-sm font-semibold">
                 <div className="flex items-center space-x-4">
-                    {/* Left Label and Arrow */}
                     <div
-                        className={`flex items-center space-x-2 ${leftActive ? "text-blue-600" : "text-gray-600"}`}
+                        className={`flex items-center space-x-2 ${leftActive ? "text-gray-600" : "text-blue-600"}`}
                     >
                         <span>Employer</span>
                     </div>
-
-                    {/* Arrows */}
                     <div className="flex items-center space-x-2">
                         <button onClick={() => { setLeftActive(true); setRightActive(false); }}>
                             <FaChevronLeft className="text-xl hover:scale-110" />
@@ -91,18 +89,23 @@ const Questionnaire = () => {
                             <FaChevronRight className="text-xl hover:scale-110" />
                         </button>
                     </div>
-
-                    {/* Right Label */}
                     <div
-                        className={`flex items-center space-x-2 ${rightActive ? "text-blue-600" : "text-gray-600"}`}
+                        className={`flex items-center space-x-2 ${rightActive ? "text-gray-600" : "text-blue-600"}`}
                     >
                         <span>Employee</span>
                     </div>
                 </div>
             </div>
             <div className="flex-grow flex flex-col items-center justify-center space-y-20">
-                <DivWithDropdown />
-                <DivWithDropdown />
+                <DivWithDropdown 
+                    selectedType={firstSelectedType} 
+                    setSelectedType={setFirstSelectedType} 
+                />
+                <DivWithDropdown 
+                    selectedType={secondSelectedType} 
+                    setSelectedType={setSecondSelectedType} 
+                />
+            
             </div>
         </div>
     );

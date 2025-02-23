@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { useQuestionType } from "../context/QuestionTypeContext";
 import Navbar from "../components/Navbar";
 import { useNavigate } from "react-router";
 
 const Live_Generation = () => {
+    const { secondSelectedType } = useQuestionType();
     const navigation = useNavigate();
     const [text, setText] = useState<string>("");
     const handleFinishClick = () => {
@@ -19,15 +21,42 @@ const Live_Generation = () => {
                     <span>2. Is the clause of Probationary Period included?</span>
                 </div>
             </div>
-            <div className="absolute top-80 left-10 w-250 flex items-center space-x-2">
-                <div className="h-0.5 w-2/5 bg-black absolute left-0"></div>
-                <input
-                    type="text"
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    className="px-2 py-1 text-sm border-none bg-transparent outline-none w-2/5 relative z-10 top-[-14px] max-w-full overflow-hidden text-ellipsis"
-                    placeholder="Enter text"
-                />
+            <div className="absolute top-75 left-10 w-250 flex items-center space-x-2">
+                {secondSelectedType !== "Radio" && (
+                    <div className="h-0.5 w-2/5 bg-black absolute left-0"></div>
+                )}
+                {secondSelectedType === "Radio" ? (
+                    <div className="flex space-x-20 relative z-10 ml-25">
+                        <label className="flex items-center space-x-1 cursor-pointer">
+                            <input
+                                type="radio"
+                                value="Yes"
+                                checked={text === "Yes"}
+                                onChange={() => setText("Yes")}
+                                className="cursor-pointer"
+                            />
+                            <span>Yes</span>
+                        </label>
+                        <label className="flex items-center space-x-1 cursor-pointer">
+                            <input
+                                type="radio"
+                                value="No"
+                                checked={text === "No"}
+                                onChange={() => setText("No")}
+                                className="cursor-pointer"
+                            />
+                            <span>No</span>
+                        </label>
+                    </div>
+                ) : (
+                    <input
+                        type={secondSelectedType === "Number" ? "number" : "text"}
+                        value={text}
+                        onChange={(e) => setText(e.target.value)}
+                        className="px-2 py-1 text-sm border-none bg-transparent outline-none w-2/5 relative z-10 top-[-14px] max-w-full overflow-hidden text-ellipsis"
+                        placeholder="Enter text"
+                    />
+                )}
             </div>
             <div className="flex justify-end mt-16 mr-20">
                 <div className="bg-lime-300 rounded-lg shadow-sm border border-black-100 p-8 w-1/2">
