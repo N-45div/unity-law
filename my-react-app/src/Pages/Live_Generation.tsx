@@ -47,11 +47,18 @@ const Live_Generation = () => {
                     </div>
                 ) : (
                     <input
-                        type={firstSelectedType === "Number" ? "number" : "text"}
+                        type="text"
                         value={text}
-                        onChange={(e) => setText(e.target.value)}
+                        onChange={(e) => {
+                            const value = e.target.value;
+                            if (firstSelectedType === "Number" && /^[0-9]*$/.test(value)) {
+                                setText(value);
+                            } else if (firstSelectedType !== "Number") {
+                                setText(value);
+                            }
+                        }}
                         className="px-2 py-1 text-sm border-none bg-transparent outline-none w-2/5 relative z-10 top-[-14px] max-w-full overflow-hidden text-ellipsis"
-                        placeholder="Enter text"
+                        placeholder={firstSelectedType === "Number" ? "Enter number" : "Enter text"}
                     />
                 )}
             </div>
