@@ -30,10 +30,10 @@ const MatchLine: React.FC<MatchLineProps> = ({ matches, getPositions }) => {
         return (
           <line
             key={index}
-            x1={start.x + 5} // Added slight variation
-            y1={start.y}
-            x2={end.x - 5} // Added slight variation
-            y2={end.y}
+            x1={end.x - 5} // Swapped positions
+            y1={end.y}
+            x2={start.x + 5} // Swapped positions
+            y2={start.y}
             stroke={match.isCorrect ? "green" : "red"}
             strokeWidth="4"
             strokeLinecap="round"
