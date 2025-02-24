@@ -2,6 +2,7 @@ import Navbar from "../components/Navbar";
 import { FaChevronDown, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { useState } from "react";
 import { useQuestionType } from "../context/QuestionTypeContext";
+import { useHighlightedText } from "../context/HighlightedTextContext";
 
 interface DivWithDropdownProps {
     selectedType: string | null; 
@@ -105,6 +106,7 @@ const Questionnaire = () => {
     const [leftActive, setLeftActive] = useState(true); 
     const [rightActive, setRightActive] = useState(false);
     const { firstSelectedType, secondSelectedType, setFirstSelectedType, setSecondSelectedType } = useQuestionType();
+    const { highlightedTexts } = useHighlightedText();
     return (
         <div className="min-h-screen flex flex-col bg-gradient-to-r from-green-100 via-purple-100 to-blue-100 relative">
             <Navbar />
@@ -140,6 +142,16 @@ const Questionnaire = () => {
                     setSelectedType={setSecondSelectedType} 
                 />
             
+            </div>
+            <div className="absolute bottom-50 left-10 bg-white p-4 shadow-md rounded-lg">
+                <h3 className="text-lg font-semibold">Placeholders chosen:</h3>
+                <ul>
+                {highlightedTexts.length > 0 ? (
+                    highlightedTexts.map((text, index) => <li key={index}>{text}</li>)
+                ) : (
+                    <li>No placeholders yet.</li>
+                )}
+                </ul>
             </div>
         </div>
     );

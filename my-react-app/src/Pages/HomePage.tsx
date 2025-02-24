@@ -11,6 +11,7 @@ import {
 import { GrDocumentConfig } from "react-icons/gr";
 import { LuBrain } from "react-icons/lu";
 import { useNavigate } from "react-router";
+import Header from "./Header";
 
 interface LevelProps {
   title: string;
@@ -236,14 +237,10 @@ const HomePage = () => {
   };
 
   return (
-<<<<<<< HEAD
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 px-4 py-36 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-=======
+
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 px-4 sm:px-6 lg:px-8">
       {showNavBar && <Header />}
       <div className="max-w-7xl mx-auto py-36 ">
->>>>>>> LevelOneQuizResponsiveDesign
         <div className="bg-white bg-opacity-90 backdrop-blur-sm p-8 rounded-3xl shadow-xl">
           <div className="max-w-3xl mx-auto mb-8 text-center">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">

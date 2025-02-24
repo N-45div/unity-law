@@ -4,6 +4,7 @@ import { TbSettingsPlus } from "react-icons/tb";
 import { ImLoop2 } from "react-icons/im";
 import { useState } from "react";
 import Navbar from "../components/Navbar";
+import { useHighlightedText } from "../context/HighlightedTextContext";
 
 const icons = [
   { icon: <FaPenToSquare />, label: "Edit PlaceHolder" },
@@ -13,6 +14,40 @@ const icons = [
 ];
 const LevelTwoPart_Two = () => {
   const [tooltip, setTooltip] = useState<string | null>(null);
+  const { addHighlightedText } = useHighlightedText();
+
+  const handleIconClick = () => {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+  
+    const range = selection.getRangeAt(0);
+    const selectedText = range.toString().trim();
+    if (!selectedText) return;
+  
+    const parentNode = range.commonAncestorContainer;
+    const parentText = parentNode.textContent || "";
+    const match = parentText.match(/\[(.*?)\]/g);
+    if (!match) return;
+    let isExactMatch = false;
+    
+    match.forEach((bracketedText) => {
+      const textWithoutBrackets = bracketedText.slice(1, -1);
+      if (selectedText === textWithoutBrackets) {
+        isExactMatch = true;
+      }
+    });
+  
+    if (!isExactMatch) return;
+    const span = document.createElement("span");
+    span.style.backgroundColor = "yellow";
+    span.textContent = selectedText;
+  
+    range.deleteContents();
+    range.insertNode(span);
+    addHighlightedText(selectedText);
+  };
+  
+  
 
   return (
     <div className="w-full min-h-screen bg-gradient-to-r from-green-100 via-purple-100 to-blue-100">
@@ -25,6 +60,8 @@ const LevelTwoPart_Two = () => {
               className="p-2 rounded-full bg-lime-300 hover:bg-lime-400 transition-colors duration-200 flex items-center justify-center text-2xl"
               onMouseEnter={() => setTooltip(label)}
               onMouseLeave={() => setTooltip(null)}
+              onClick={label === "Edit PlaceHolder" ? () => handleIconClick() : undefined}
+
             >
               {icon}
             </button>
