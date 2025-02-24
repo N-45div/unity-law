@@ -144,12 +144,12 @@ const Questionnaire = () => {
             
             </div>
             <div className="absolute bottom-50 left-10 bg-white p-4 shadow-md rounded-lg">
-                <h3 className="text-lg font-semibold">Placeholders chosen:</h3>
+                <h3 className="text-lg font-semibold">Questions: </h3>
                 <ul>
                 {highlightedTexts.length > 0 ? (
-                    highlightedTexts.map((text, index) => <li key={index}>{text}</li>)
+                    highlightedTexts.map((text, index) => <li key={index}>What would you like to change {text} to?</li>)
                 ) : (
-                    <li>No placeholders yet.</li>
+                    <li>No questions yet.</li>
                 )}
                 </ul>
             </div>
