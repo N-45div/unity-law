@@ -2,15 +2,19 @@ import React, { useEffect, useState } from "react";
 
 interface MatchLineProps {
   matches: { jargonId: number; definitionId: number; isCorrect: boolean }[];
-  getPositions: () => { [key: number]: { x: number; y: number } };
+  getPositions?: () => { [key: number]: { x: number; y: number } };
 }
 
-const MatchLine: React.FC<MatchLineProps> = ({ matches, getPositions }) => {
+const MatchLine: React.FC<MatchLineProps> = ({ matches, getPositions = () => ({}) }) => {
   const [positions, setPositions] = useState<{ [key: number]: { x: number; y: number } }>({});
 
   useEffect(() => {
     const updatePositions = () => {
-      setPositions(getPositions());
+      if (typeof getPositions === "function") {
+        setPositions(getPositions());
+      } else {
+        console.error("getPositions is not a function");
+      }
     };
 
     updatePositions(); // Initial calculation
