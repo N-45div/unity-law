@@ -7,22 +7,29 @@ interface MatchLineProps {
 
 const MatchLine: React.FC<MatchLineProps> = ({ matches, positions }) => {
   return (
-    <svg className="absolute w-full h-full top-0 left-0 pointer-events-none">
-      {matches.map((match, index) => {
-        const start = positions[match.jargonId];
-        const end = positions[match.definitionId];
+    <svg className="absolute top-0 left-0 w-full h-full pointer-events-none">
+      {matches.map(({ jargonId, definitionId, isCorrect }, index) => {
+        const start = positions[jargonId];
+        const end = positions[definitionId];
+
+        console.log("Start Position:", start);
+        console.log("End Position:", end);
+        console.log("Matches:", matches);
+        console.log("Positions:", positions);
+        // console.log("Jargon Position:", positions[match.jargonId]);
+        // console.log("Definition Position:", positions[match.definitionId]);
 
         if (!start || !end) return null;
 
         return (
           <line
             key={index}
-            x1={start.x}
+            x1={start.x-50}
             y1={start.y}
-            x2={end.x}
+            x2={end.x-5}
             y2={end.y}
-            stroke={match.isCorrect ? "green" : "red"}
-            strokeWidth="4"
+            stroke={isCorrect ? "green" : "red"}
+            strokeWidth="5" // Increased stroke width
             strokeLinecap="round"
           />
         );

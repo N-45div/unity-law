@@ -16,10 +16,11 @@ const MatchItem: React.FC<MatchItemProps> = ({ id, text, onSelect, isSelected, i
     const updatePosition = () => {
       if (ref.current) {
         const rect = ref.current.getBoundingClientRect();
-        const parentRect = ref.current.offsetParent?.getBoundingClientRect();
-        if (parentRect) {
-          const x = rect.left - parentRect.left + rect.width / 2;
-          const y = rect.top - parentRect.top + rect.height / 2;
+        const container = document.getElementById("game-container")?.getBoundingClientRect();
+
+        if (container) {
+          const x = rect.left - container.left + rect.width / 2; // Center X
+          const y = rect.top - container.top + rect.height / 2; // Center Y
           setPosition(id, x, y);
         }
       }
@@ -28,7 +29,7 @@ const MatchItem: React.FC<MatchItemProps> = ({ id, text, onSelect, isSelected, i
     updatePosition();
     window.addEventListener("resize", updatePosition);
     return () => window.removeEventListener("resize", updatePosition);
-  }, []);
+  }, [id]);
 
   return (
     <div

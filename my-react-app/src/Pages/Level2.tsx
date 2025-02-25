@@ -16,12 +16,7 @@ const definitions = [
   { id: 4, text: "The use of software to create legal documents by automatically filling in details specific to each case." }
 ];
 
-const correctMatches = {
-  1: 1, 
-  2: 2, 
-  3: 3, 
-  4: 4  
-};
+const correctMatches = { 1: 1, 2: 2, 3: 3, 4: 4 };
 
 const Level2 = () => {
   const [selectedJargon, setSelectedJargon] = useState<number | null>(null);
@@ -48,9 +43,9 @@ const Level2 = () => {
     <div className="flex flex-col items-center p-10 bg-gray-100 min-h-screen relative">
       <h1 className="text-2xl font-bold mb-6 text-blue-700">Match the definitions with the correct jargons</h1>
 
-      {/* Game Container */}
-      <div className="relative w-full max-w-5xl flex justify-between items-center gap-40">
-
+      {/* 🔹 Game Container (Wrap Everything for Correct Positioning) */}
+      <div id="game-container" className="relative w-full max-w-5xl flex justify-between items-center gap-40">
+        
         {/* Left Side (Jargons) */}
         <div className="flex flex-col gap-6">
           {jargons.map((jargon) => (
@@ -65,8 +60,7 @@ const Level2 = () => {
           ))}
         </div>
 
-        {/* Line SVG */}
-        <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
+        <div className="absolute top-10 -left-90 w-full h-full pointer-events-none">
           <MatchLine matches={matches} positions={positions} />
         </div>
 
