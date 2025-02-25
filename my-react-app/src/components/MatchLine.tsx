@@ -12,15 +12,23 @@ const MatchLine: React.FC<MatchLineProps> = ({ matches, positions }) => {
         const start = positions[jargonId];
         const end = positions[definitionId];
 
-        if (!start || !end || isNaN(start.x) || isNaN(start.y) || isNaN(end.x) || isNaN(end.y)) return null;
+        if (
+          !start ||
+          !end ||
+          isNaN(start.x) ||
+          isNaN(start.y) ||
+          isNaN(end.x) ||
+          isNaN(end.y)
+        )
+          return null;
 
         return (
           <line
             key={index}
-            x1={start.x - 50} // Move left
-            y1={start.y}
-            x2={end.x - 5}   // Move left
-            y2={end.y}
+            x1={start.x - 85}
+            y1={start.y - 50}
+            x2={end.x + 65}
+            y2={end.y - 40}
             stroke={isCorrect ? "green" : "red"}
             strokeWidth="3"
             strokeLinecap="round"

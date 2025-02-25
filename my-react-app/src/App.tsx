@@ -8,7 +8,7 @@ const App = () => {
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/Level-One-Quiz" element={<LevelOneQuizPage />} />
-      <Route path="/Level-Two-Quiz" element={<Level2/>}/>
+      <Route path="/Level-Two-Quiz" element={<Level2 />} />
     </Routes>
   );
 };
