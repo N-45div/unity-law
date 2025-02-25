@@ -6,15 +6,14 @@ const steps = [
   {
     heading: "What is Contract Lifecycle Management?",
     content: [
-      `Contract lifecycle management (CLM) is the process of managing a contract from initiation through execution, performance, and renewal or expiration.`,
-      `CLM tools are software solutions that automate and streamline various stages of this process to enhance efficiency and compliance.`,
+      `Contract lifecycle management (CLM) is the process of managing a contract from initiation through execution, performance, and renewal or expiration. CLM tools are software solutions that automate and streamline various stages of this process to enhance efficiency and compliance.`,
+      `In this game, you will navigate through stages of creating, managing, and finalizing contracts, earning points and rewards as you complete tasks like drafting, negotiating, and renewing contracts efficiently and compliantly.`,
     ],
     footerImg: lawyaltechLogo,
   },
   {
     content: [
-      `Embark on the journey of Ana Smith, a Legal Intern at the prestigious Ron & Taylor's law firm in the heart of London.`,
-      `As Ana, you're currently immersed in legal research and handling elementary legal tasks, but your true passion lies in legal technology.`,
+      `Embark on the journey of Ana Smith, a Legal Intern at the prestigious Ron & Taylor’s law firm in the heart of London. As Ana, you're currently immersed in the world of legal research and handling elementary legal tasks. However, your true passion lies in the cutting-edge realm of legal technology, and you're eager to transition into the legal tech department. Your adventure begins in a modest cubicle, but as you master new skills and knowledge, your environment will transform. Watch your workspace evolve with upgraded office furniture and state-of-the-art computer accessories. Each level you conquer brings you one step closer to your dream promotion and your very own office. Rise through the ranks and reshape your destiny!`,
     ],
     footerImg: lawyaltechLogo,
   },
@@ -64,23 +63,23 @@ const ContentComponent: React.FC = () => {
   useEffect(() => {
     setDisplayText([]); // Reset text when step changes
     setParagraphIndex(0);
-  
+
     const paragraphs = [...steps[count].content]; // Clone content array
-  
+
     // If there's a list, add its terms and definitions as separate paragraphs
     if (steps[count].list) {
       steps[count].list.forEach((item) => {
         paragraphs.push(`${item.term}: ${item.definition}`);
       });
     }
-  
+
     let currentPara = 0; // Track which paragraph is being typed
-  
+
     const typeNextParagraph = () => {
       if (currentPara < paragraphs.length) {
         let i = 0;
         let tempText = "";
-  
+
         const interval = setInterval(() => {
           if (i < paragraphs[currentPara].length) {
             tempText += paragraphs[currentPara][i];
@@ -98,18 +97,17 @@ const ContentComponent: React.FC = () => {
             }
           }
         }, 30); // Typing speed
-  
+
         return interval;
       }
     };
-  
+
     const intervalId = typeNextParagraph(); // Start typing effect
-  
+
     return () => {
       clearInterval(intervalId); // Cleanup when component re-renders
     };
   }, [count]);
-  
 
   return (
     <div className={steps[count].klara ? "px-10 py-5" : "p-20"}>
@@ -120,7 +118,9 @@ const ContentComponent: React.FC = () => {
       )}
       <div className="flex flex-row items-center">
         {/* Render Klara image if available */}
-        {steps[count].klara && <img src={steps[count].klara} alt="klara" className="mr-4" />}
+        {steps[count].klara && (
+          <img src={steps[count].klara} alt="klara" className="mr-4" />
+        )}
         <span>
           {/* Render each paragraph with typing effect */}
           {displayText.map((paragraph, idx) => (
@@ -143,22 +143,23 @@ const ContentComponent: React.FC = () => {
       )} */}
 
       {/* Navigation */}
-      <div className={`flex justify-between ${steps[count].klara ? "" : "mt-12"}`}>
-        
-        {/* Render footer image if available */}
-        {steps[count].footerImg && (
-          <div className="w-54 h-26">
-            <img src={steps[count].footerImg} alt="Lawyaltech Logo" />
-          </div>
-        )}
-        {count < steps.length - 1 && (
-          <button
-            className="mt-4 px-6 py-2 rounded-full bg-red-600 text-white hover:bg-red-700 transition duration-300"
-            onClick={() => setCount(count + 1)}
-          >
-            Next
-          </button>
-        )}
+      <div className={`p-20 pb-32 ${steps[count].klara ? "px-10 py-5" : ""}`}>
+        <div className="fixed bottom-0 left-0 w-full flex justify-between items-center p-4 bg-white shadow-lg z-10">
+          {/* Render footer image if available */}
+          {steps[count].footerImg && (
+            <div className="w-54 h-26 ">
+              <img src={steps[count].footerImg} alt="Lawyaltech Logo" />
+            </div>
+          )}
+          {count < steps.length - 1 && (
+            <button
+              className="  mt-4 px-6 py-2 rounded-full bg-red-600 text-white hover:bg-red-700 transition duration-300"
+              onClick={() => setCount(count + 1)}
+            >
+              Next
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
