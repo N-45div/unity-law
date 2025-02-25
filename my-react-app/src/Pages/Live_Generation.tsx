@@ -1,28 +1,56 @@
 import { useNavigate } from "react-router";
 import { useQuestionType } from "../context/QuestionTypeContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
+import { determineQuestionType } from "../utils/questionTypeUtils";
+import { useHighlightedText } from "../context/HighlightedTextContext";
 
 const Live_Generation = () => {
     const { firstSelectedType } = useQuestionType();
     const navigation = useNavigate();
-    const [text, setText] = useState<string>("");
+    const [text, setText] = useState<string>(""); 
+    const [question, setQuestion] = useState<{ type: string, value: string }>({ type: "Unknown", value: "" });
+    const { highlightedTexts } = useHighlightedText();
     const handleButtonClick = () => {
         navigation("/Live_Generation_2");
     };
+
+    useEffect(() => {
+        const questionText = highlightedTexts[0] || "";
+        setQuestion(determineQuestionType(questionText));
+    }, [firstSelectedType, highlightedTexts]);
+
+    useEffect(() => {
+        if (firstSelectedType === "Number" && /^[0-9]*$/.test(text)) {
+            setText(text);  
+        } else if (firstSelectedType !== "Number") {
+            setText(text);  
+        }
+    }, [firstSelectedType, text]); 
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (firstSelectedType === "Number" && (e.key === "e" || e.key === "E")) {
+            e.preventDefault(); 
+        }
+    };
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setText(e.target.value);
+    };
+
     return (
         <div className="min-h-screen flex flex-col bg-gradient-to-r from-green-100 via-purple-100 to-blue-100 relative">
             <Navbar />
             <div className="absolute top-32 left-10 w-100 h-30 bg-lime-300 rounded-lg shadow-md flex items-center justify-center text-black text-sm font-semibold">
                 <div className="flex items-center space-x-4">
-                    <span>1. What's the name of the employee?</span>
+                    <span>1. {question.value}</span>
                 </div>
             </div>
             <div className="absolute top-75 left-10 w-250 flex items-center space-x-2">
-                {firstSelectedType !== "Radio" && (
+                {question.type !== "Logic Y/N" && (
                     <div className="h-0.5 w-2/5 bg-black absolute left-0"></div>
                 )}
-                {firstSelectedType === "Radio" ? (
+                {question.type === "Logic Y/N" ? (
                     <div className="flex space-x-20 relative z-10 ml-25">
                         <label className="flex items-center space-x-1 cursor-pointer">
                             <input
@@ -47,18 +75,12 @@ const Live_Generation = () => {
                     </div>
                 ) : (
                     <input
-                        type="text"
+                        type={question.type === "Number" ? "number" : "text"}
                         value={text}
-                        onChange={(e) => {
-                            const value = e.target.value;
-                            if (firstSelectedType === "Number" && /^[0-9]*$/.test(value)) {
-                                setText(value);
-                            } else if (firstSelectedType !== "Number") {
-                                setText(value);
-                            }
-                        }}
+                        onChange={handleInputChange}
+                        onKeyDown={handleKeyDown}
                         className="px-2 py-1 text-sm border-none bg-transparent outline-none w-2/5 relative z-10 top-[-14px] max-w-full overflow-hidden text-ellipsis"
-                        placeholder={firstSelectedType === "Number" ? "Enter number" : "Enter text"}
+                        placeholder={question.type === "Number" ? "Enter number" : "Enter text"}
                     />
                 )}
             </div>
@@ -89,8 +111,8 @@ const Live_Generation = () => {
                     Next Page
                 </button>
             </div>
-            
         </div>
     );
-}
+};
+
 export default Live_Generation;

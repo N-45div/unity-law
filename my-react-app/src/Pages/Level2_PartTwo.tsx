@@ -15,39 +15,94 @@ const icons = [
 const LevelTwoPart_Two = () => {
   const [tooltip, setTooltip] = useState<string | null>(null);
   const { addHighlightedText } = useHighlightedText();
-
-  const handleIconClick = () => {
+  const handleIconClick = (label: string) => {
     const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return;
+    if (!selection || !selection.rangeCount) return;
   
     const range = selection.getRangeAt(0);
-    const selectedText = range.toString().trim();
-    if (!selectedText) return;
+    const selectedText = range.toString();
   
-    const parentNode = range.commonAncestorContainer;
-    const parentText = parentNode.textContent || "";
-    const match = parentText.match(/\[(.*?)\]/g);
-    if (!match) return;
-    let isExactMatch = false;
-    
-    match.forEach((bracketedText) => {
-      const textWithoutBrackets = bracketedText.slice(1, -1);
-      if (selectedText === textWithoutBrackets) {
-        isExactMatch = true;
+    if (selectedText.startsWith("[") && selectedText.endsWith("]")) {
+      if (selectedText.length >= 35 && label === "Edit PlaceHolder") {
+        return;
       }
-    });
+      if ((selectedText.length < 35 || selectedText.length > 450) && label === "Small Condition") {
+        return;
+      }
+      if (selectedText.length < 450 && label === "Big Condition") {
+        return;
+      }
+      const textWithoutBrackets = selectedText.slice(1, -1);
+      addHighlightedText(textWithoutBrackets);
+      let highlightColor = "yellow";
+      if (label === "Small Condition") highlightColor = "lightblue";
+      if (label === "Big Condition") highlightColor = "lightgreen";
+      const span = document.createElement("span");
+      span.style.backgroundColor = highlightColor;
+      span.textContent = selectedText;
   
-    if (!isExactMatch) return;
-    const span = document.createElement("span");
-    span.style.backgroundColor = "yellow";
-    span.textContent = selectedText;
-  
-    range.deleteContents();
-    range.insertNode(span);
-    addHighlightedText(selectedText);
+      range.deleteContents();
+      range.insertNode(span);
+    }
   };
   
+  // const handleIconClick = (label: string) => {
+  //   const selection = window.getSelection();
+  //   if (!selection || selection.rangeCount === 0) return;
   
+  //   const range = selection.getRangeAt(0);
+  //   let selectedText = range.toString().trim();
+  //   if (!selectedText) return;
+  
+  //   if (selectedText.length >= 30 && label === "Edit PlaceHolder") {
+  //     return;
+  //   }
+  //   if ((selectedText.length < 30 || selectedText.length > 450) && label === "Small Condition") {
+  //     return;
+  //   }
+  //   if (selectedText.length < 450 && label === "Big Condition") {
+  //     return;
+  //   }
+    
+  //   const parentNode = range.commonAncestorContainer;
+  //   const parentElement =
+  //     parentNode.nodeType === Node.TEXT_NODE ? parentNode.parentElement : parentNode;
+  
+  //   if (!parentElement) return;
+    
+  //   const fullText = parentElement.textContent || "";
+  
+  //   // Match the longest bracketed text, including nested brackets
+  //   const bracketRegex = /\[([^\[\]]*(?:\[[^\[\]]*\][^\[\]]*)*)\]/g;
+  //   const matches = [...fullText.matchAll(bracketRegex)];
+  
+  //   if (!matches.length) return;
+  
+  //   let fullMatch = null;
+  
+  //   matches.forEach((match) => {
+  //     const bracketedText = match[1]; // Extract text inside the outermost brackets
+  //     if (`[${bracketedText}]` === `[${selectedText}]`) {
+  //       fullMatch = bracketedText;
+  //     }
+  //   });
+  
+  //   if (!fullMatch) return; // Only proceed if the exact full bracketed text is selected
+  
+  //   // Set highlight color
+  //   let highlightColor = "yellow";
+  //   if (label === "Small Condition") highlightColor = "lightblue";
+  //   if (label === "Big Condition") highlightColor = "lightgreen";
+  
+  //   // Create highlight span
+  //   const span = document.createElement("span");
+  //   span.style.backgroundColor = highlightColor;
+  //   span.textContent = `${fullMatch}`;
+  
+  //   range.deleteContents();
+  //   range.insertNode(span);
+  //   addHighlightedText(fullMatch);
+  // };
 
   return (
     <div className="w-full min-h-screen bg-gradient-to-r from-green-100 via-purple-100 to-blue-100">
@@ -60,8 +115,9 @@ const LevelTwoPart_Two = () => {
               className="p-2 rounded-full bg-lime-300 hover:bg-lime-400 transition-colors duration-200 flex items-center justify-center text-2xl"
               onMouseEnter={() => setTooltip(label)}
               onMouseLeave={() => setTooltip(null)}
-              onClick={label === "Edit PlaceHolder" ? () => handleIconClick() : undefined}
-
+              onClick={() => {
+                handleIconClick(label);
+              }}
             >
               {icon}
             </button>
@@ -105,7 +161,7 @@ const LevelTwoPart_Two = () => {
 
             <h2 className="text-2xl font-bold mt-6">PROBATIONARY PERIOD</h2>
             <p>
-              The first [Probation Period Length] of employment will be a
+              [The first [Probation Period Length] of employment will be a
               probationary period. The Company shall assess the Employee’s
               performance and suitability during this time. The Company may
               extend the probationary period by up to [Probation Extension
