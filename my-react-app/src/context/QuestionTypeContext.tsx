@@ -1,25 +1,21 @@
 import React, { createContext, useState, useContext, ReactNode } from "react";
 
 interface QuestionTypeContextProps {
-    firstSelectedType: string | null;
-    secondSelectedType: string | null;
-    setFirstSelectedType: (type: string | null) => void;
-    setSecondSelectedType: (type: string | null) => void;
+    selectedTypes: (string | null)[];
+    setSelectedTypes: (types: (string | null)[]) => void;
 }
 
 interface QuestionTypeProviderProps {
-  children: ReactNode;
+    children: ReactNode;
 }
 
 const QuestionTypeContext = createContext<QuestionTypeContextProps | undefined>(undefined);
 
 export const QuestionTypeProvider: React.FC<QuestionTypeProviderProps> = ({ children }) => {
-    // Set default to null
-    const [firstSelectedType, setFirstSelectedType] = useState<string | null>(null);
-    const [secondSelectedType, setSecondSelectedType] = useState<string | null>(null);
+    const [selectedTypes, setSelectedTypes] = useState<(string | null)[]>([]);
 
     return (
-        <QuestionTypeContext.Provider value={{ firstSelectedType, secondSelectedType, setFirstSelectedType, setSecondSelectedType }}>
+        <QuestionTypeContext.Provider value={{ selectedTypes, setSelectedTypes }}>
             {children}
         </QuestionTypeContext.Provider>
     );
