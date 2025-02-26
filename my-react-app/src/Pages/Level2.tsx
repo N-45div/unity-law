@@ -1,6 +1,5 @@
 import { useState } from "react";
 import MatchItem from "../components/MatchItem";
-import MatchLine from "../components/MatchLine";
 
 const jargons = [
   { id: 1, text: "Placeholders" },
@@ -41,45 +40,38 @@ const Level2 = () => {
     { jargonId: number; definitionId: number; isCorrect: boolean }[]
   >([]);
   const [score, setScore] = useState(0);
-  const [positions, setPositions] = useState<{
-    [key: number]: { x: number; y: number };
-  }>({});
 
   const handleSelection = (jargonId: number, definitionId?: number) => {
     if (!selectedJargon && definitionId === undefined) {
       setSelectedJargon(jargonId);
     } else if (selectedJargon !== null && definitionId !== undefined) {
       const alreadyMatched = matches.some(
-        (match) =>
-          match.jargonId === selectedJargon ||
-          match.definitionId === definitionId
+        (match) => match.jargonId === selectedJargon || match.definitionId === definitionId
       );
 
       if (!alreadyMatched) {
         const isCorrect = correctMatches[selectedJargon] === definitionId;
-        setMatches([
-          ...matches,
+
+        setMatches((prev) => [
+          ...prev,
           { jargonId: selectedJargon, definitionId, isCorrect },
         ]);
-        if (isCorrect) setScore(score + 1);
+
+        if (isCorrect) setScore((prev) => prev + 1);
       }
 
       setSelectedJargon(null);
     }
   };
 
-  const updatePosition = (id: number, x: number, y: number) => {
-    setPositions((prev) => ({ ...prev, [id]: { x, y } }));
-  };
-
   return (
-    <div className="flex flex-col items-center p-10 bg-gray-100 min-h-screen relative">
+    <div className="flex flex-col items-center p-10 bg-gray-100 min-h-screen">
       <h1 className="text-2xl font-bold mb-6 text-blue-700">
         Match the definitions with the correct jargons
       </h1>
 
       {/* Game Container */}
-      <div className="relative w-full max-w-5xl flex justify-between items-center gap-40">
+      <div className="w-full max-w-5xl flex justify-between items-center gap-40">
         {/* Left Side (Jargons) */}
         <div className="flex flex-col gap-6">
           {jargons.map((jargon) => (
@@ -89,53 +81,50 @@ const Level2 = () => {
               text={jargon.text}
               onSelect={() => handleSelection(jargon.id)}
               isSelected={selectedJargon === jargon.id}
-              setPosition={updatePosition}
             />
           ))}
-        </div>
-
-        {/* Line SVG */}
-        <div className="absolute top-10 -left-80 w-full h-full pointer-events-none">
-          <MatchLine matches={matches} positions={positions} />
         </div>
 
         {/* Right Side (Definitions) */}
         <div className="flex flex-col gap-6">
-          {definitions.map((definition) => (
-            <MatchItem
-              key={definition.id}
-              id={definition.id}
-              text={definition.text}
-              onSelect={() => handleSelection(selectedJargon!, definition.id)}
-              isDefinition
-              setPosition={updatePosition}
-            />
-          ))}
+          {definitions.map((definition) => {
+            const matched = matches.find((match) => match.definitionId === definition.id);
+            return (
+              <MatchItem
+                key={definition.id}
+                id={definition.id}
+                text={definition.text}
+                onSelect={() => handleSelection(selectedJargon!, definition.id)}
+                isDefinition
+                matchedJargon={matched?.jargonId}
+                isCorrect={matched?.isCorrect}
+              />
+            );
+          })}
         </div>
       </div>
 
       {/* Score Display */}
       <div className="mt-6 text-lg font-semibold flex items-center gap-2">
-  {/* Conditional flag: Red if score < 3, Green if score >= 3 */}
-  <div className="w-8 h-8">
-    {score < 3 ? (
-      // Red Flag 🚩
-      <svg width="40" height="40" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M8 4V44" stroke="black" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M8 8H30L24 16L30 24H8V8Z" fill="red" stroke="black" strokeWidth="4" strokeLinejoin="round"/>
-      </svg>
-    ) : (
-      // Green Flag 🚩
-      <svg width="40" height="40" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M8 4V44" stroke="black" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M8 8H30L24 16L30 24H8V8Z" fill="green" stroke="black" strokeWidth="4" strokeLinejoin="round"/>
-      </svg>
-    )}
-  </div>
+        {/* Conditional flag: Red if score < 3, Green if score >= 3 */}
+        <div className="w-8 h-8">
+          {score < 3 ? (
+            // Red Flag 🚩
+            <svg width="40" height="40" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M8 4V44" stroke="black" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M8 8H30L24 16L30 24H8V8Z" fill="red" stroke="black" strokeWidth="4" strokeLinejoin="round"/>
+            </svg>
+          ) : (
+            // Green Flag 🚩
+            <svg width="40" height="40" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M8 4V44" stroke="black" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M8 8H30L24 16L30 24H8V8Z" fill="green" stroke="black" strokeWidth="4" strokeLinejoin="round"/>
+            </svg>
+          )}
+        </div>
 
-  Score: {score} / {jargons.length}
-</div>
-
+        Score: {score} / {jargons.length}
+      </div>
     </div>
   );
 };

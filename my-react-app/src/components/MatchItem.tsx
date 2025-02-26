@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useState } from "react";
 
 interface MatchItemProps {
   id: number;
@@ -6,7 +6,8 @@ interface MatchItemProps {
   onSelect: () => void;
   isSelected?: boolean;
   isDefinition?: boolean;
-  setPosition: (id: number, x: number, y: number) => void;
+  matchedJargon?: number;
+  isCorrect?: boolean;
 }
 
 const MatchItem: React.FC<MatchItemProps> = ({
@@ -15,41 +16,44 @@ const MatchItem: React.FC<MatchItemProps> = ({
   onSelect,
   isSelected,
   isDefinition,
-  setPosition,
+  matchedJargon,
+  isCorrect,
 }) => {
-  const ref = useRef<HTMLDivElement>(null);
+  const [bgColor, setBgColor] = useState("bg-white");
 
   useEffect(() => {
-    const updatePosition = () => {
-      if (ref.current) {
-        const rect = ref.current.getBoundingClientRect();
-        const parentRect = ref.current.offsetParent?.getBoundingClientRect();
-        if (parentRect) {
-          const x = rect.left - parentRect.left + rect.width / 2 - 50;
-          const y = rect.top - parentRect.top + rect.height / 2;
-          setPosition(id, x, y);
-        }
-      }
-    };
-
-    updatePosition();
-    window.addEventListener("resize", updatePosition);
-    return () => window.removeEventListener("resize", updatePosition);
-  }, []);
+    if (isCorrect === true) {
+      setBgColor("bg-[#99FF99]"); // Correct match - Green
+    } else if (isCorrect === false) {
+      setBgColor("bg-[#FF9999]"); // Incorrect match - Red
+    } else {
+      setBgColor("bg-white"); // Default color
+    }
+  }, [isCorrect]);
 
   return (
     <div
-      ref={ref}
       onClick={onSelect}
-      className={`cursor-pointer px-6 py-3 rounded-lg shadow-md transition-all 
+      className={`cursor-pointer px-6 py-3 rounded-lg shadow-lg transition-all duration-300 ease-in-out transform relative
         ${
           isDefinition
-            ? "bg-white border border-gray-300"
-            : "bg-gradient-to-r from-green-400 to-blue-400 text-white"
+            ? "border border-gray-300 hover:shadow-xl"
+            : "bg-gradient-to-r from-green-400 to-blue-500 text-white hover:brightness-110"
         }
-        ${isSelected ? "ring-2 ring-blue-500" : ""}`}
+        ${isSelected ? "ring-4 ring-blue-500 scale-105" : ""}
+        ${bgColor}`}
     >
-      {text}
+      <span className="text-sm font-medium">{text}</span>
+
+      {/* Improved Number Circle (Top-right) */}
+      {matchedJargon !== undefined && (
+        <span
+          className="absolute top-1.5 right-1.5 bg-blue-600 text-white w-6 h-6 flex items-center justify-center 
+          text-xs font-bold rounded-full border-2 border-white shadow-md transition-all duration-300 ease-in-out"
+        >
+          {matchedJargon}
+        </span>
+      )}
     </div>
   );
 };
