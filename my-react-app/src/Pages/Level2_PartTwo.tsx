@@ -22,29 +22,50 @@ const LevelTwoPart_Two = () => {
     if (!selection || !selection.rangeCount) return;
 
     const range = selection.getRangeAt(0);
-    const selectedText = range.toString();
+    const selectedText = range.toString().trim();
 
     if (selectedText.startsWith("[") && selectedText.endsWith("]")) {
-      if (selectedText.length >= 35 && label === "Edit PlaceHolder") {
-        return;
-      }
-      if ((selectedText.length < 35 || selectedText.length > 450) && label === "Small Condition") {
-        return;
-      }
-      if (selectedText.length < 450 && label === "Big Condition") {
-        return;
-      }
       const textWithoutBrackets = selectedText.slice(1, -1);
-      addHighlightedText(textWithoutBrackets);
-      let highlightColor = "yellow";
-      if (label === "Small Condition") highlightColor = "lightblue";
-      if (label === "Big Condition") highlightColor = "lightgreen";
-      const span = document.createElement("span");
-      span.style.backgroundColor = highlightColor;
-      span.textContent = selectedText;
 
-      range.deleteContents();
-      range.insertNode(span);
+      if (label === "Edit PlaceHolder") {
+        if (selectedText.length >= 35) return;
+        addHighlightedText(textWithoutBrackets);
+        const span = document.createElement("span");
+        span.style.backgroundColor = "yellow";
+        span.textContent = selectedText;
+        range.deleteContents();
+        range.insertNode(span);
+      } else if (label === "Small Condition") {
+        if (selectedText.length < 35 || selectedText.length > 450) return;
+        addHighlightedText(textWithoutBrackets);
+        const span = document.createElement("span");
+        span.style.backgroundColor = "lightblue";
+        span.textContent = selectedText;
+        range.deleteContents();
+        range.insertNode(span);
+      } else if (label === "Big Condition") {
+        if (selectedText.length < 450) return;
+        addHighlightedText(textWithoutBrackets);
+        const span = document.createElement("span");
+        span.style.backgroundColor = "lightgreen";
+        span.textContent = selectedText;
+        range.deleteContents();
+        range.insertNode(span);
+
+        // Specific handling for probationary period clause
+        const probationClause = "[The first [Probation Period Length] of employment will be a probationary period. The Company shall assess the Employee’s performance and suitability during this time. The Company may extend the probationary period by up to [Probation Extension Length] if further assessment is required. During the probationary period, either party may terminate the employment by providing [one week's] written notice. Upon successful completion, the Employee will be confirmed in their role.]";
+        if (selectedText === probationClause) {
+          // Ensure the question is set to radio type for this specific clause
+          addHighlightedText("Probation Period Length"); // Use a key to associate with the clause
+        }
+      } else if (label === "Loop") {
+        addHighlightedText(textWithoutBrackets);
+        const span = document.createElement("span");
+        span.style.backgroundColor = "yellow";
+        span.textContent = selectedText;
+        range.deleteContents();
+        range.insertNode(span);
+      }
     }
   };
 

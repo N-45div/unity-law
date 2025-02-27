@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Navbar from "../components/Navbar";
-import { determineQuestionType, textTypes, numberTypes, radioTypes } from "../utils/questionTypeUtils";
+import { determineQuestionType, textTypes, numberTypes, radioTypes, QuestionType } from "../utils/questionTypeUtils";
 import { documentText } from "../utils/EmploymentAgreement";
 import { useHighlightedText } from "../context/HighlightedTextContext";
 import { useQuestionType } from "../context/QuestionTypeContext";
@@ -56,12 +56,17 @@ const mapQuestionsToClauses = (
       }
     });
 
+    const fullProbationClause = "The first [Probation Period Length] of employment will be a probationary period. The Company shall assess the Employee’s performance and suitability during this time. The Company may extend the probationary period by up to [Probation Extension Length] if further assessment is required. During the probationary period, either party may terminate the employment by providing [one week's] written notice. Upon successful completion, the Employee will be confirmed in their role.";
     Object.keys(radioTypes).forEach((key) => {
       const placeholder = `[${key}]`;
-      if (clause.includes(placeholder)) {
+      if (clause.includes(placeholder) || clause.includes(fullProbationClause)) {
         questionClauseMap[radioTypes[key]] = clause;
       }
     });
+    if (clause.includes(fullProbationClause)) {
+      questionClauseMap["What's the probation period length?"] = clause;
+      questionClauseMap["What's the probation extension length?"] = clause;
+    }
   });
 
   Object.keys(priorityMappings).forEach((question) => {
@@ -82,13 +87,36 @@ const Live_Generation = () => {
   const navigation = useNavigate();
   const { highlightedTexts } = useHighlightedText();
   const { selectedTypes } = useQuestionType();
-  const [question, setQuestion] = useState<{ type: string; value: string }>({
+  const [questionTexts] = useState<string[]>([]); // Assuming questionTexts is managed in Questionnaire
+  const [question, setQuestion] = useState<{ type: QuestionType; value: string }>({
     type: "Unknown",
     value: "",
   });
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [questionClauseMap, setQuestionClauseMap] = useState<{ [key: string]: string }>({});
-  const [userAnswer, setUserAnswer] = useState<string>("");
+  const [userAnswers, setUserAnswers] = useState<{ [key: string]: string | boolean }>(initializeUserAnswers(highlightedTexts, selectedTypes));
+
+  function initializeUserAnswers(highlightedTexts: string[], selectedTypes: (string | null)[]): { [key: string]: string | boolean } {
+    const initialAnswers: { [key: string]: string | boolean } = {};
+    highlightedTexts.forEach((text, index) => {
+      const { primaryValue } = determineQuestionType(text);
+      const type = selectedTypes[index] || "Text";
+      if (primaryValue) {
+        initialAnswers[primaryValue] = type === "Radio" ? false : "";
+      }
+    });
+    return initialAnswers;
+  }
+
+  const getUpdatedClause = (clause: string, placeholder: string, answer: string | boolean): string => {
+    if (typeof answer === "boolean") {
+      return answer ? clause : "";
+    }
+    return clause.replace(
+      new RegExp(`\\[${placeholder.replace(/\s+/g, " ").trim()}\\]`, "gi"),
+      answer || `[${placeholder}]`
+    );
+  };
 
   useEffect(() => {
     const clauses = extractClauses(documentText);
@@ -98,22 +126,20 @@ const Live_Generation = () => {
 
   useEffect(() => {
     const questionText = highlightedTexts[currentQuestionIndex] || "";
-    const { primaryType, primaryValue, alternateType, alternateValue } = determineQuestionType(questionText);
-    const selectedType = selectedTypes[currentQuestionIndex] || "Text";
+    const { primaryType } = determineQuestionType(questionText);
+    const selectedType = selectedTypes[currentQuestionIndex] || primaryType;
+    const editedQuestion = questionTexts[currentQuestionIndex] || determineQuestionType(questionText).primaryValue || "";
 
-    let finalQuestion = { type: "Unknown", value: "" };
-    if (selectedType.toLowerCase() === "text") {
-      finalQuestion = { type: "Text", value: primaryValue || "" };
-    } else if (selectedType.toLowerCase() === "radio" && alternateValue) {
-      finalQuestion = { type: "Logic Y/N", value: alternateValue };
-    } else if (selectedType.toLowerCase() === "number") {
-      finalQuestion = { type: "Number", value: primaryValue || "" };
-    } else {
-      finalQuestion = { type: primaryType, value: primaryValue || "" };
+    let finalQuestion = { type: "Unknown" as QuestionType, value: "" };
+    if (selectedType === "Text") {
+      finalQuestion = { type: "Text", value: editedQuestion };
+    } else if (selectedType === "Number") {
+      finalQuestion = { type: "Number", value: editedQuestion };
+    } else if (selectedType === "Radio") {
+      finalQuestion = { type: "Radio", value: editedQuestion };
     }
     setQuestion(finalQuestion);
-    setUserAnswer("");
-  }, [currentQuestionIndex, highlightedTexts, selectedTypes]);
+  }, [currentQuestionIndex, highlightedTexts, selectedTypes, questionTexts]);
 
   const handleNextQuestion = () => {
     if (currentQuestionIndex < highlightedTexts.length - 1) {
@@ -127,32 +153,61 @@ const Live_Generation = () => {
     }
   };
 
-  const handleAnswerChange = (value: string) => {
+  const handleAnswerChange = (value: string | boolean) => {
+    const questionText = highlightedTexts[currentQuestionIndex] || "";
+    const { primaryValue } = determineQuestionType(questionText);
     const currentType = selectedTypes[currentQuestionIndex] || "Text";
-    if (currentType === "Number" && !/^\d*$/.test(value)) {
-      alert("Only numbers are allowed for this question.");
+
+    if (currentType === "Number" && typeof value === "string" && !/^\d+$/.test(value)) {
+      alert("Please enter a valid number for this question.");
       return;
     }
-    if (currentType === "Text" && /\d/.test(value)) {
-      alert("Only text is allowed for this question, no numbers.");
+    if (currentType === "Radio" && typeof value !== "boolean") {
+      alert("Please select Yes or No for this question.");
       return;
     }
-    setUserAnswer(value);
+
+    setUserAnswers((prev) => ({
+      ...prev,
+      [primaryValue]: value,
+    }));
   };
 
-  const updatedClause = questionClauseMap[question.value]?.replace(
-    new RegExp(`\\[${highlightedTexts[currentQuestionIndex].replace(/\s+/g, " ").trim()}\\]`, "gi"),
-    userAnswer || `[${highlightedTexts[currentQuestionIndex]}]`
-  );
+  const getClauseForQuestion = (question: string, questionClauseMap: { [key: string]: string }, userAnswers: { [key: string]: string | boolean }): string => {
+    const placeholder = highlightedTexts[currentQuestionIndex];
+    const answer = userAnswers[determineQuestionType(placeholder).primaryValue] || "";
+    return questionClauseMap[question] ? getUpdatedClause(questionClauseMap[question], placeholder, answer) : "";
+  };
+
+  const finalDocument = () => {
+    let updatedDoc = documentText;
+    highlightedTexts.forEach((text, index) => {
+      const { primaryValue } = determineQuestionType(text);
+      const answer = userAnswers[primaryValue];
+      const question = questionTexts[index] || primaryValue;
+      const placeholder = text;
+      if (questionClauseMap[question] && answer !== undefined) {
+        updatedDoc = updatedDoc.replace(
+          questionClauseMap[question],
+          getUpdatedClause(questionClauseMap[question], placeholder, answer)
+        );
+      }
+    });
+    return updatedDoc;
+  };
 
   const renderAnswerInput = () => {
+    const questionText = highlightedTexts[currentQuestionIndex] || "";
+    const { primaryValue } = determineQuestionType(questionText);
     const currentType = selectedTypes[currentQuestionIndex] || "Text";
+    const answer = userAnswers[primaryValue] || (currentType === "Radio" ? false : "");
+
     switch (currentType) {
       case "Text":
         return (
           <input
             type="text"
-            value={userAnswer}
+            value={typeof answer === "string" ? answer : ""}
             onChange={(e) => handleAnswerChange(e.target.value)}
             className="mt-4 p-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600"
             placeholder="Enter your text answer"
@@ -162,7 +217,7 @@ const Live_Generation = () => {
         return (
           <input
             type="text"
-            value={userAnswer}
+            value={typeof answer === "string" ? answer : ""}
             onChange={(e) => handleAnswerChange(e.target.value)}
             className="mt-4 p-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600"
             placeholder="Enter a number"
@@ -175,9 +230,9 @@ const Live_Generation = () => {
               <input
                 type="radio"
                 name={`answer-${currentQuestionIndex}`}
-                value="Yes"
-                checked={userAnswer === "Yes"}
-                onChange={(e) => setUserAnswer(e.target.value)}
+                value="true"
+                checked={answer === true}
+                onChange={() => handleAnswerChange(true)}
               />
               Yes
             </label>
@@ -185,9 +240,9 @@ const Live_Generation = () => {
               <input
                 type="radio"
                 name={`answer-${currentQuestionIndex}`}
-                value="No"
-                checked={userAnswer === "No"}
-                onChange={(e) => setUserAnswer(e.target.value)}
+                value="false"
+                checked={answer === false}
+                onChange={() => handleAnswerChange(false)}
               />
               No
             </label>
@@ -197,8 +252,8 @@ const Live_Generation = () => {
         return (
           <input
             type="text"
-            value={userAnswer}
-            onChange={(e) => setUserAnswer(e.target.value)}
+            value={typeof answer === "string" ? answer : ""}
+            onChange={(e) => handleAnswerChange(e.target.value)}
             className="mt-4 p-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600"
             placeholder="Enter your answer"
           />
@@ -218,12 +273,12 @@ const Live_Generation = () => {
           </div>
           <div className="w-1/2 p-8 bg-white rounded-lg shadow-sm border border-black-100">
             <h2 className="text-blue-600 text-3xl font-bold mb-8 tracking-tight">
-              EMPLOYMENT AGREEMENT
+              Clause Preview
             </h2>
             <div
               className="text-blue-600 leading-relaxed"
               dangerouslySetInnerHTML={{
-                __html: updatedClause || "No clause found for this question.",
+                __html: useMemo(() => getClauseForQuestion(question.value, questionClauseMap, userAnswers) || "", [question.value, questionClauseMap, userAnswers]),
               }}
             />
           </div>

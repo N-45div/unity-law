@@ -3,14 +3,23 @@ import { FaChevronDown, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { useState, useEffect } from "react";
 import { useQuestionType } from "../context/QuestionTypeContext";
 import { useHighlightedText } from "../context/HighlightedTextContext";
-import { determineQuestionType } from "../utils/questionTypeUtils";
+import {
+  determineQuestionType,
+  numberTypes,
+  radioTypes,
+  textTypes,
+  validateQuestionRelevance,
+  QuestionType,
+} from "../utils/questionTypeUtils";
+
+// Inside Questionnaire.tsx (combined with DivWithDropdown)
 
 interface DivWithDropdownProps {
   textValue: string;
   index: number;
   onTypeChange: (index: number, type: string) => void;
-  onQuestionTextChange: (index: number, newText: string) => void; // New prop for updating question text
-  initialQuestionText: string; // New prop for initial question text
+  onQuestionTextChange: (index: number, newText: string) => void;
+  initialQuestionText: string;
 }
 
 const DivWithDropdown: React.FC<DivWithDropdownProps> = ({
@@ -20,86 +29,144 @@ const DivWithDropdown: React.FC<DivWithDropdownProps> = ({
   onQuestionTextChange,
   initialQuestionText,
 }) => {
-  const [questionText, setQuestionText] = useState(initialQuestionText);
-  const [selectedType, setSelectedType] = useState<string>("Select the Question Type");
+  const [questionText, setQuestionText] = useState(
+    initialQuestionText || "No text selected"
+  );
+  const [selectedType, setSelectedType] = useState<string>("Text");
   const [isOpen, setIsOpen] = useState(false);
-  const {
-    primaryType,
-    primaryValue,
-    validTypes,
-    alternateType,
-    alternateValue,
-  } = determineQuestionType(textValue);
+  const { selectedTypes } = useQuestionType();
+  const { highlightedTexts } = useHighlightedText();
+  const { primaryType, primaryValue, validTypes } =
+    determineQuestionType(textValue);
 
   useEffect(() => {
-    // Update question text when initialQuestionText changes
-    setQuestionText(initialQuestionText);
-  }, [initialQuestionText]);
-
-  const handleTypeSelect = (type: string) => {
-    if (type !== "Select the Question Type") {
-      const typeLower = type.toLowerCase() as Lowercase<string>;
-      const isValidType = validTypes.some(
-        (t) => t.toLowerCase() === typeLower.replace("logic y/n", "radio")
+    // Default to Radio for probationary period clause
+    const probationClause =
+      "[The first [Probation Period Length] of employment will be a probationary period. The Company shall assess the Employee’s performance and suitability during this time. The Company may extend the probationary period by up to [Probation Extension Length] if further assessment is required. During the probationary period, either party may terminate the employment by providing [one week's] written notice. Upon successful completion, the Employee will be confirmed in their role.]";
+    if (highlightedTexts[index] === probationClause) {
+      setSelectedType("Radio");
+      onTypeChange(index, "Radio");
+      setQuestionText("Is the clause of probationary period applicable?");
+      onQuestionTextChange(
+        index,
+        "Is the clause of probationary period applicable?"
       );
+    } else {
+      if (selectedTypes[index]) {
+        setSelectedType(selectedTypes[index]);
+      } else {
+        setSelectedType(primaryType);
+      }
+
+      let defaultText = primaryValue || "No text selected";
+      const currentType =
+        selectedTypes[index]?.toLowerCase() || primaryType.toLowerCase();
+
+      if (currentType === "radio" && primaryValue) {
+        defaultText = primaryValue;
+      } else if (currentType === "text" && primaryValue) {
+        defaultText = primaryValue;
+      } else if (currentType === "number" && primaryValue) {
+        defaultText = primaryValue;
+      }
 
       if (
-        !isValidType &&
-        typeLower !== "radio" &&
-        !validTypes.includes("Logic Y/N")
+        questionText === primaryValue ||
+        questionText === "No text selected" ||
+        questionText === initialQuestionText
       ) {
-        alert(
-          `Only ${validTypes
-            .join(", ")
-            .replace(/Logic Y\/N/g, "Radio")} type questions can be made for this question. Please select an appropriate type.`
-        );
-        return;
+        if (questionText !== defaultText) {
+          setQuestionText(defaultText);
+          onQuestionTextChange(index, defaultText);
+        }
       }
+    }
+  }, [
+    selectedTypes,
+    index,
+    primaryValue,
+    primaryType,
+    initialQuestionText,
+    questionText,
+    onQuestionTextChange,
+    highlightedTexts,
+  ]);
 
-      setSelectedType(type);
-      onTypeChange(index, type);
+  const handleTypeSelect = (type: string) => {
+    const validType = validTypes.includes(type as QuestionType);
+    if (!validType) {
+      alert(
+        `Only ${validTypes.join(
+          ", "
+        )} type questions can be made for this placeholder. Please select an appropriate type.`
+      );
+      return;
+    }
 
-      // Update question text based on the selected type if not already edited
-      if (typeLower === "radio" && alternateValue && questionText === primaryValue) {
-        setQuestionText(alternateValue);
-        onQuestionTextChange(index, alternateValue);
-      } else if (
-        (typeLower === "text" || typeLower === "number") &&
-        questionText === alternateValue
-      ) {
-        setQuestionText(primaryValue || "No text selected");
-        onQuestionTextChange(index, primaryValue || "No text selected");
+    // Enforce Radio for probationary clause
+    const probationClause =
+      "[The first [Probation Period Length] of employment will be a probationary period. The Company shall assess the Employee’s performance and suitability during this time. The Company may extend the probationary period by up to [Probation Extension Length] if further assessment is required. During the probationary period, either party may terminate the employment by providing [one week's] written notice. Upon successful completion, the Employee will be confirmed in their role.]";
+    if (highlightedTexts[index] === probationClause && type !== "Radio") {
+      alert(
+        "This question must be of Radio type for the probationary period clause."
+      );
+      return;
+    }
+
+    setSelectedType(type);
+    onTypeChange(index, type);
+
+    let newQuestionText = questionText;
+    if (questionText === primaryValue || questionText === "No text selected") {
+      if (type.toLowerCase() === "radio" && primaryValue) {
+        newQuestionText = primaryValue;
+      } else if (type.toLowerCase() === "text" && primaryValue) {
+        newQuestionText = primaryValue;
+      } else if (type.toLowerCase() === "number" && primaryValue) {
+        newQuestionText = primaryValue;
       }
+      setQuestionText(newQuestionText);
+      onQuestionTextChange(index, newQuestionText);
     }
     setIsOpen(false);
   };
 
   const handleQuestionTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newText = e.target.value;
-    setQuestionText(newText);
-    onQuestionTextChange(index, newText);
+    if (!validateQuestionRelevance(textValue, newText)) {
+      alert(
+        `The question must relate to "${textValue.toLowerCase()}". Please ensure it’s relevant to the selected placeholder.`
+      );
+      return;
+    }
+    if (newText !== questionText) {
+      setQuestionText(newText);
+      onQuestionTextChange(index, newText);
+    }
   };
 
+  const dropdownOptions = ["Text", "Paragraph", "Email", "Number", "Radio"];
+
   return (
-    <div className="flex items-center space-x-20 w-full">
+    <div className="flex items-center space-x-20 w-full relative">
       <button className="flex flex-col justify-between h-10 w-10 p-1">
         <span className="block h-1 w-20 bg-black rounded"></span>
         <span className="block h-1 w-20 bg-black rounded"></span>
         <span className="block h-1 w-20 bg-black rounded"></span>
       </button>
-      <div className="relative w-200 h-40 bg-lime-300 rounded-lg shadow-md flex flex-col items-center justify-center text-black text-lg font-semibold p-4 z-10">
+      <div className="relative w-[500px] h-40 bg-lime-300 rounded-lg shadow-md flex flex-col items-center justify-center text-black text-lg font-semibold p-4 z-20">
         <div className="relative w-full flex items-center space-x-2">
           <div className="h-0.5 w-2/5 bg-black absolute left-0"></div>
           <input
             type="text"
             value={questionText}
             onChange={handleQuestionTextChange}
-            className="px-2 py-1 text-sm bg-transparent w-2/5 relative z-10 top-[-14px] max-w-full overflow-hidden text-ellipsis border-b border-gray-500 focus:outline-none focus:border-blue-600"
+            className="px-2 py-1 text-sm bg-transparent w-2/5 relative z-30 top-[-14px] max-w-full overflow-hidden border-b border-gray-500 focus:outline-none focus:border-blue-600"
             placeholder="Edit question text"
           />
         </div>
 
-        <div className="absolute top-1/2 right-10 transform -translate-y-1/2 flex items-center space-x-2">
+        <div className="absolute top-1/2 right-4 transform -translate-y-1/2 flex items-center space-x-2 z-30">
           <div className="relative">
             <button
               className="flex items-center space-x-2 text-black text-sm bg-white px-2 py-1 rounded"
@@ -110,7 +177,7 @@ const DivWithDropdown: React.FC<DivWithDropdownProps> = ({
             </button>
             {isOpen && (
               <div className="absolute right-0 mt-2 w-40 bg-white border rounded shadow-lg z-50">
-                {["Select the Question Type", "Text", "Number", "Radio"].map((type) => (
+                {dropdownOptions.map((type) => (
                   <div
                     key={type}
                     className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
@@ -135,7 +202,7 @@ const Questionnaire = () => {
   const { selectedTypes, setSelectedTypes } = useQuestionType();
   const [uniqueQuestions, setUniqueQuestions] = useState<string[]>([]);
   const [duplicateDetected, setDuplicateDetected] = useState<boolean>(false);
-  const [questionTexts, setQuestionTexts] = useState<string[]>([]); // Store editable question texts
+  const [questionTexts, setQuestionTexts] = useState<string[]>([]);
 
   useEffect(() => {
     const processedTexts = [];
@@ -156,52 +223,73 @@ const Questionnaire = () => {
     const initialTexts = processedTexts.map(
       (text) => determineQuestionType(text).primaryValue || "No text selected"
     );
-    const initialTypes = new Array(processedTexts.length).fill("Select the Question Type");
+    const initialTypes = processedTexts.map((text) => {
+      const probationClause =
+        "[The first [Probation Period Length] of employment will be a probationary period. The Company shall assess the Employee’s performance and suitability during this time. The Company may extend the probationary period by up to [Probation Extension Length] if further assessment is required. During the probationary period, either party may terminate the employment by providing [one week's] written notice. Upon successful completion, the Employee will be confirmed in their role.]";
+      if (text === probationClause) return "Radio";
+      if (textTypes.hasOwnProperty(text)) return "Text";
+      if (numberTypes.hasOwnProperty(text)) return "Number";
+      if (radioTypes.hasOwnProperty(text)) return "Radio";
+      return "Text";
+    });
     setQuestionTexts(initialTexts);
     setSelectedTypes(initialTypes);
   }, [highlightedTexts, setSelectedTypes]);
 
   const handleTypeChange = (index: number, type: string) => {
-    const newTypes = [...selectedTypes];
-    newTypes[index] = type;
-    setSelectedTypes(newTypes);
-
-    const newTexts = [...questionTexts];
-    const { primaryValue, alternateValue, validTypes } = determineQuestionType(
-      uniqueQuestions[index]
-    );
-    const typeLower = type.toLowerCase() as Lowercase<string>;
-    const isValidType = validTypes.some(
-      (t) => t.toLowerCase() === typeLower.replace("logic y/n", "radio")
-    );
-
-    if (
-      !isValidType &&
-      typeLower !== "radio" &&
-      !validTypes.includes("Logic Y/N")
-    ) {
+    const textValue = uniqueQuestions[index];
+    const { validTypes } = determineQuestionType(textValue);
+    const validType = validTypes.includes(type as QuestionType);
+    if (!validType) {
       alert(
-        `Only ${validTypes
-          .join(", ")
-          .replace(/Logic Y\/N/g, "Radio")} type questions can be made for this question. Please select an appropriate type.`
+        `Only ${validTypes.join(
+          ", "
+        )} type questions can be made for this placeholder. Please select an appropriate type.`
       );
       return;
     }
 
-    // Only update if the text hasn't been manually edited
-    if (newTexts[index] === primaryValue || newTexts[index] === alternateValue) {
-      if (typeLower === "radio" && alternateValue) {
-        newTexts[index] = alternateValue;
-      } else if (typeLower === "text" || typeLower === "number") {
-        newTexts[index] = primaryValue || "No text selected";
+    // Enforce Radio for probationary clause
+    const probationClause =
+      "[The first [Probation Period Length] of employment will be a probationary period. The Company shall assess the Employee’s performance and suitability during this time. The Company may extend the probationary period by up to [Probation Extension Length] if further assessment is required. During the probationary period, either party may terminate the employment by providing [one week's] written notice. Upon successful completion, the Employee will be confirmed in their role.]";
+    if (highlightedTexts[index] === probationClause && type !== "Radio") {
+      alert(
+        "This question must be of Radio type for the probationary period clause."
+      );
+      return;
+    }
+
+    const newTypes = [...selectedTypes];
+    newTypes[index] = type;
+    setSelectedTypes(newTypes);
+
+    const { primaryValue } = determineQuestionType(textValue);
+    const newTexts = [...questionTexts];
+    if (
+      newTexts[index] === primaryValue ||
+      newTexts[index] === "No text selected"
+    ) {
+      if (type.toLowerCase() === "radio" && primaryValue) {
+        newTexts[index] = primaryValue;
+      } else if (type.toLowerCase() === "text" && primaryValue) {
+        newTexts[index] = primaryValue;
+      } else if (type.toLowerCase() === "number" && primaryValue) {
+        newTexts[index] = primaryValue;
       }
       setQuestionTexts(newTexts);
     }
   };
 
   const handleQuestionTextChange = (index: number, newText: string) => {
+    const textValue = uniqueQuestions[index];
+    if (!validateQuestionRelevance(textValue, newText)) {
+      alert(
+        `The question must relate to "${textValue.toLowerCase()}". Please ensure it’s relevant to the selected placeholder.`
+      );
+      return;
+    }
     const newTexts = [...questionTexts];
-    newTexts[index] = newText;
+    newTexts[index] = newText; // Replace the default question with the user-created question
     setQuestionTexts(newTexts);
   };
 
@@ -262,7 +350,11 @@ const Questionnaire = () => {
                 index={index}
                 onTypeChange={handleTypeChange}
                 onQuestionTextChange={handleQuestionTextChange}
-                initialQuestionText={questionTexts[index]}
+                initialQuestionText={
+                  questionTexts[index] ||
+                  determineQuestionType(text).primaryValue ||
+                  "No text selected"
+                }
               />
             ))
           ) : (

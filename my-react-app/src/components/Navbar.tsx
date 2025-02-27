@@ -14,10 +14,12 @@ const Navbar = () => {
       "/Questionnaire": "Questionnaire",
       "/Live_Generation": "Live Document Generation",
       "/Live_Generation_2": "Live Document Generation",
-      "/Finish": "Generated Document", // For the Finish page, show this label
+      "/Finish": "Generated Document",
     };
 
-    setActiveButton(routes[location.pathname] || null);
+    const activeLabel = routes[location.pathname] || null;
+    console.log("Current pathname:", location.pathname, "Active label:", activeLabel);
+    setActiveButton(activeLabel);
   }, [location.pathname]);
 
   const handlePageChange = (label: string) => {
@@ -25,11 +27,13 @@ const Navbar = () => {
       Document: "/Level-Two-Part-Two",
       Questionnaire: "/Questionnaire",
       "Live Document Generation": "/Live_Generation",
-      "Generated Document": "/Finish", // This won't actually be clicked on /Finish
+      "Generated Document": "/Finish",
     };
 
-    if (label !== "Generated Document") {
-      navigation(routes[label]);
+    const path = routes[label];
+    console.log("Navigating to:", path);
+    if (path) {
+      navigation(path);
     }
   };
 

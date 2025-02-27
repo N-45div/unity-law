@@ -1,8 +1,9 @@
-type QuestionType = "Text" | "Number" | "Logic Y/N" | "Unknown";
+// Define an expanded QuestionType to include all possible types from your dropdown
+export type QuestionType = "Text" | "Paragraph" | "Email" | "Number" | "Radio" | "Unknown";
 
 export const textTypes: { [key: string]: string } = {
   "Employer Name": "What's the name of the employer?",
-  "Registered Address": "What's the registered address?",
+  "Registered Address": "What's the registered address of the employer?",
   "Employee Name": "What's the name of the employee?",
   "Employee Address": "What's the employee's address?",
   "Employment Start Date": "What's the employment start date?",
@@ -34,10 +35,64 @@ export const numberTypes: { [key: string]: string } = {
 };
 
 export const radioTypes: { [key: string]: string } = {
+  // Using the full clause as the key
+  "The first [Probation Period Length] of employment will be a probationary period. The Company shall assess the Employee’s performance and suitability during this time. The Company may extend the probationary period by up to [Probation Extension Length] if further assessment is required. During the probationary period, either party may terminate the employment by providing [one week's] written notice. Upon successful completion, the Employee will be confirmed in their role.": "Is the clause of probationary period applicable?",
   "Previous Employment Start Date": "Is the previous service applicable?",
-  "Probation Period Length": "Is the clause of probationary period applicable?",
   "Overtime Pay Rate": "Is the overtime payment applicable?",
   "Details of Company Sick Pay Policy": "Is the sick pay policy applicable?",
+};
+
+// New validation function to check if a question relates to the specific placeholder
+export const validateQuestionRelevance = (placeholder: string, question: string): boolean => {
+  const lowerQuestion = question.toLowerCase().trim();
+
+  // Text type placeholders (ensure relevance to the specific field)
+  if (textTypes.hasOwnProperty(placeholder)) {
+    if (placeholder === "Employer Name") {
+      return (
+        lowerQuestion.includes("employer") &&
+        (lowerQuestion.includes("name") || lowerQuestion.includes("company"))
+      );
+    }
+    if (placeholder === "Registered Address") {
+      return (
+        lowerQuestion.includes("address") &&
+        (lowerQuestion.includes("employer") || lowerQuestion.includes("company") || lowerQuestion.includes("registered"))
+      );
+    }
+    if (placeholder === "Employee Name") {
+      return (
+        lowerQuestion.includes("employee") &&
+        (lowerQuestion.includes("name") || lowerQuestion.includes("person"))
+      );
+    }
+    if (placeholder === "Employee Address") {
+      return (
+        lowerQuestion.includes("employee") &&
+        lowerQuestion.includes("address")
+      );
+    }
+    // Add similar checks for other textTypes as needed (e.g., "Employment Start Date", "Job Title", etc.)
+    return lowerQuestion.includes(placeholder.toLowerCase().replace(/ /g, " ")) || lowerQuestion.includes(placeholder.toLowerCase());
+  }
+
+  // Number type placeholders (ensure relevance to numerical aspects)
+  if (numberTypes.hasOwnProperty(placeholder)) {
+    return (
+      lowerQuestion.includes("what") &&
+      (lowerQuestion.includes("length") || lowerQuestion.includes("weeks") || lowerQuestion.includes("rate") || lowerQuestion.includes("salary") || lowerQuestion.includes("entitlement"))
+    );
+  }
+
+  // Radio type placeholders (ensure relevance to Yes/No applicability)
+  if (radioTypes.hasOwnProperty(placeholder)) {
+    return (
+      lowerQuestion.includes("is") &&
+      (lowerQuestion.includes("applicable") || lowerQuestion.includes("apply"))
+    );
+  }
+
+  return true; // Fallback for unknown placeholders
 };
 
 export const determineQuestionType = (text: string): { 
@@ -53,35 +108,30 @@ export const determineQuestionType = (text: string): {
   let alternateType: QuestionType | undefined;
   let alternateValue: string | undefined;
 
-  // Check text types
+  // Text types (restrict to Text only)
   if (textTypes.hasOwnProperty(text)) {
     primaryType = "Text";
     primaryValue = textTypes[text];
-    validTypes.push("Text");
+    validTypes = ["Text"]; // Enforce Text type for all text placeholders
   }
 
-  // Check number types
+  // Number types (restrict to Number only)
   if (numberTypes.hasOwnProperty(text)) {
     primaryType = "Number";
     primaryValue = numberTypes[text];
-    validTypes.push("Number");
+    validTypes = ["Number"]; // Enforce Number type for all number placeholders
   }
 
-  // Check radio types
-  if (radioTypes.hasOwnProperty(text)) {
-    if (primaryType === "Unknown") {
-      primaryType = "Logic Y/N";
-      primaryValue = radioTypes[text];
-    } else {
-      alternateType = "Logic Y/N";
-      alternateValue = radioTypes[text];
-    }
-    validTypes.push("Logic Y/N");
+  // Radio types (restrict to Radio only, including full clause)
+  const fullProbationClause = "The first [Probation Period Length] of employment will be a probationary period. The Company shall assess the Employee’s performance and suitability during this time. The Company may extend the probationary period by up to [Probation Extension Length] if further assessment is required. During the probationary period, either party may terminate the employment by providing [one week's] written notice. Upon successful completion, the Employee will be confirmed in their role.";
+  if (radioTypes.hasOwnProperty(text) || text === fullProbationClause) {
+    primaryType = "Radio";
+    primaryValue = radioTypes[text] || radioTypes[fullProbationClause];
+    validTypes = ["Radio"]; // Enforce Radio type for all radio placeholders
   }
 
-  // If no valid type is found, return Unknown
   if (validTypes.length === 0) {
-    return { primaryType: "Unknown", primaryValue: "", validTypes: [] };
+    return { primaryType: "Unknown", primaryValue: "", validTypes: ["Text", "Paragraph", "Email", "Number", "Radio"] };
   }
 
   return { primaryType, primaryValue, validTypes, alternateType, alternateValue };
