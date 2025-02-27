@@ -3,8 +3,6 @@ import React, { createContext, useState, useContext, ReactNode } from "react";
 interface QuestionTypeContextProps {
     selectedTypes: (string | null)[];
     setSelectedTypes: (types: (string | null)[]) => void;
-    questionTexts: string[];
-    setQuestionTexts: (texts: string[]) => void;
 }
 
 interface QuestionTypeProviderProps {
@@ -15,10 +13,9 @@ const QuestionTypeContext = createContext<QuestionTypeContextProps | undefined>(
 
 export const QuestionTypeProvider: React.FC<QuestionTypeProviderProps> = ({ children }) => {
     const [selectedTypes, setSelectedTypes] = useState<(string | null)[]>([]);
-    const [questionTexts, setQuestionTexts] = useState<string[]>([]);
 
     return (
-        <QuestionTypeContext.Provider value={{ selectedTypes, setSelectedTypes, questionTexts, setQuestionTexts }}>
+        <QuestionTypeContext.Provider value={{ selectedTypes, setSelectedTypes }}>
             {children}
         </QuestionTypeContext.Provider>
     );
