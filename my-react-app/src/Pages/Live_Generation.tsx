@@ -236,7 +236,7 @@ const Live_Generation = () => {
             value={typeof answer === "string" ? answer : ""}
             onChange={(e) => handleAnswerChange(index, formatDateAnswer(e.target.value))}
             className="mt-4 p-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600"
-            placeholder="Enter a number or text (e.g., date in MM/DD/YYYY or DD/MM/YYYY)"
+            placeholder="Enter a number or text"
           />
         );
       case "Radio":

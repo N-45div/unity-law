@@ -183,12 +183,12 @@ const EmploymentAgreement: React.FC = () => (
 
       <h2 className="text-2xl font-bold mt-6">COMMENCEMENT OF EMPLOYMENT</h2>
       <p>
-        The Employee’s employment with the Company shall commence on [Employment Start Date]. The Employee's period of continuous employment will begin on this date [or, if applicable, "on [Previous Employment Start Date] with previous continuous service taken into account"].
+        The Employee’s employment with the Company shall commence on [Employment Start Date]. The Employee's period of continuous employment will begin on this date.
       </p>
 
       <h2 className="text-2xl font-bold mt-6">PROBATIONARY PERIOD</h2>
       <p>
-        [The first [Probation Period Length] of employment will be a probationary period. The Company shall assess the Employee’s performance and suitability during this time. The Company may extend the probationary period by up to [Probation Extension Length] if further assessment is required. During the probationary period, either party may terminate the employment by providing [one week's] written notice. Upon successful completion, the Employee will be confirmed in their role.] <span className="text-black font-bold">OPTIONAL</span>
+        [The first [Probation Period Length] of employment will be a probationary period. The Company shall assess the Employee’s performance and suitability during this time. The Company may extend the probationary period by up to [Probation Extension Length] if further assessment is required. During the probationary period, either party may terminate the employment by providing [one week's] written notice. Upon successful completion, the Employee will be confirmed in their role.] <span className="text-black font-bold">(Optional Clause)</span>
       </p>
 
       <h2 className="text-2xl font-bold mt-6">JOB TITLE AND DUTIES</h2>
