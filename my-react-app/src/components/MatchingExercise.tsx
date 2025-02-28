@@ -27,68 +27,60 @@ const MatchingExercise = ({ data }: MatchingExerciseProps) => {
   const termRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const defRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
-  // Handle Term Click
   const handleTermClick = (item: MatchingItem) => {
     if (item.isMatched) return;
     setSelectedTerm((prev) => (prev?.id === item.id ? null : item));
   };
 
-  // Handle Definition Click
-  // Handle Definition Click
-const handleDefinitionClick = (item: MatchingItem) => {
-  if (!selectedTerm || item.isMatched || Object.values(matches).includes(item.id)) return;
+  const handleDefinitionClick = (item: MatchingItem) => {
+    if (!selectedTerm || item.isMatched || Object.values(matches).includes(item.id)) return;
+    if (matches[selectedTerm.id]) return;
 
-  // Check if the selected term is already matched
-  if (matches[selectedTerm.id]) return;
+    const isCorrectMatch = item.id === selectedTerm.id;
+    const lineColor = isCorrectMatch ? '#10B981' : '#EF4444';
 
-  const isCorrectMatch = item.id === selectedTerm.id;
-  const lineColor = isCorrectMatch ? '#10B981' : '#EF4444'; // Green for correct, Red for incorrect
+    const termElement = termRefs.current[selectedTerm.id];
+    const defElement = defRefs.current[item.id];
 
-  const termElement = termRefs.current[selectedTerm.id];
-  const defElement = defRefs.current[item.id];
+    if (termElement && defElement) {
+      const termRect = termElement.getBoundingClientRect();
+      const defRect = defElement.getBoundingClientRect();
 
-  if (termElement && defElement) {
-    const termRect = termElement.getBoundingClientRect();
-    const defRect = defElement.getBoundingClientRect();
+      setLines((prevLines) => prevLines.filter((line) => line.startId !== selectedTerm.id));
 
-    // ❌ Remove existing connections from this term
-    setLines((prevLines) => prevLines.filter((line) => line.startId !== selectedTerm.id));
+      setLines((prevLines) => [
+        ...prevLines,
+        {
+          startId: selectedTerm.id,
+          endId: item.id,
+          startX: termRect.right + 5,
+          startY: termRect.top + termRect.height / 2,
+          endX: defRect.left - 5,
+          endY: defRect.top + defRect.height / 2,
+          color: lineColor,
+        },
+      ]);
+    }
 
-    setLines((prevLines) => [
-      ...prevLines,
-      {
-        startId: selectedTerm.id,
-        endId: item.id,
-        startX: termRect.right + 5,
-        startY: termRect.top + termRect.height / 2,
-        endX: defRect.left - 5,
-        endY: defRect.top + defRect.height / 2,
-        color: lineColor,
-      },
-    ]);
-  }
+    if (isCorrectMatch) {
+      const updatedItems = items.map((i) =>
+        i.id === item.id ? { ...i, isMatched: true } : i
+      );
+      setItems(updatedItems);
+      setMatches((prev) => ({
+        ...prev,
+        [selectedTerm.id]: item.id,
+      }));
+    } else {
+      setMatches((prev) => ({
+        ...prev,
+        [selectedTerm.id]: item.id,
+      }));
+    }
 
-  if (isCorrectMatch) {
-    const updatedItems = items.map((i) =>
-      i.id === item.id ? { ...i, isMatched: true } : i
-    );
-    setItems(updatedItems);
-    setMatches((prev) => ({
-      ...prev,
-      [selectedTerm.id]: item.id, // ✅ Ensures one match per term
-    }));
-  } else {
-    // If the match is incorrect, still mark the term as matched
-    setMatches((prev) => ({
-      ...prev,
-      [selectedTerm.id]: item.id, // ✅ Ensures one match per term
-    }));
-  }
+    setSelectedTerm(null);
+  };
 
-  setSelectedTerm(null);
-};
-
-  // Reset Exercise
   const resetExercise = () => {
     setItems(data.map((item) => ({ ...item, isMatched: false })));
     setSelectedTerm(null);
@@ -97,7 +89,6 @@ const handleDefinitionClick = (item: MatchingItem) => {
     setShowCompletion(false);
   };
 
-  // Update lines on window resize
   useEffect(() => {
     const updateLines = () => {
       setLines((prevLines) =>
@@ -139,7 +130,6 @@ const handleDefinitionClick = (item: MatchingItem) => {
       <h1 className="matching-exercise-title">Match the definitions with the correct jargons</h1>
 
       <div className="matching-columns">
-        {/* Terms Column */}
         <div className="terms-column">
           {items.map((item) => (
             <div
@@ -153,7 +143,6 @@ const handleDefinitionClick = (item: MatchingItem) => {
           ))}
         </div>
 
-        {/* Definitions Column */}
         <div className="definitions-column">
           {items.map((item) => (
             <div
@@ -167,7 +156,6 @@ const handleDefinitionClick = (item: MatchingItem) => {
           ))}
         </div>
 
-        {/* Connecting Lines */}
         {lines.map((line, index) => (
           <MatchLine
             key={`line-${index}`}
@@ -179,13 +167,6 @@ const handleDefinitionClick = (item: MatchingItem) => {
           />
         ))}
       </div>
-
-      {/* Reset Button */}
-      <button className="reset-button" onClick={resetExercise}>Reset Exercise</button>
-
-      {showCompletion && (
-        <div className="completion-message">Congratulations! You've correctly matched all items!</div>
-      )}
     </div>
   );
 };

@@ -7,147 +7,153 @@
     background-color: #f8fafc;
     border-radius: 16px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    transition: all 0.4s ease-in-out;
 }
 
 .matching-exercise-title {
     text-align: center;
-    color: #3b82f6;
-    font-size: 2.5rem;
+    color: #2563eb;
+    font-size: 2.6rem;
     font-weight: 700;
     margin-bottom: 50px;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
 }
 
 /* Container for terms and definitions */
 .matching-columns {
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
     position: relative;
-    gap: 160px; 
-    margin-bottom: 40px;
+    gap: 120px;
+    margin-bottom: 50px;
+    padding: 0 20px;
+    transition: all 0.3s ease;
 }
 
 /* Ensuring both columns are evenly spaced */
-.terms-column {
+.terms-column, .definitions-column {
     display: flex;
     flex-direction: column;
     gap: 20px;
-    align-items: flex-end; 
+    transition: all 0.3s ease;
 }
 
-.definitions-column {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    align-items: flex-start; 
-}
-
-/* Common styles for items */
-.term-item, .definition-item {
-    padding: 16px;
-    border-radius: 10px;
-    text-align: center;
-    font-size: 1.1rem;
-    cursor: pointer;
-    transition: all 0.3s ease-in-out;
-    position: relative;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-/* Styling for term items */
+/* Term Items */
 .term-item {
-    background: linear-gradient(120deg, #4ade80, #38bdf8);
-    color: #1e293b;
+    background: linear-gradient(120deg, #22c55e, #3b82f6);
+    color: #ffffff;
     font-weight: 600;
     font-size: 1.2rem;
     border: none;
     min-height: 60px;
-    width: 260px;
+    width: 280px;
     display: flex;
     align-items: center;
     justify-content: center;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: transform 0.4s ease, box-shadow 0.4s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    position: relative;
 }
 
-/* Styling for definition items */
+.term-item:hover {
+    transform: scale(1.08);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+.term-item.selected {
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.6);
+    transform: scale(1.1);
+}
+
+/* Definition Items */
 .definition-item {
-    background: white;
-    color: #475569;
-    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    color: #374151;
+    border: 2px solid #e5e7eb;
     font-size: 1rem;
     line-height: 1.6;
-    width: 420px; 
-    padding: 16px 20px;
+    width: 460px;
+    padding: 18px 24px;
     text-align: left;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.4s ease-in-out;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
-/* Highlight selection */
-.term-item.selected,
-.definition-item.selected {
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
-    transform: translateY(-2px) scale(1.02);
+.definition-item:hover {
+    transform: scale(1.04);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
+}
+
+.definition-item.matched {
+    border: 2px solid #22c55e;
+    background: rgba(34, 197, 94, 0.1);
+    transition: all 0.3s ease;
 }
 
 /* Matched items */
-.term-item.matched,
-.definition-item.matched {
-    opacity: 0.85;
-}
-
 .term-item.matched {
-    background: linear-gradient(120deg, #4ade80, #38bdf8);
+    background: linear-gradient(120deg, #16a34a, #2563eb);
+    opacity: 0.9;
+    transition: all 0.3s ease;
 }
 
-.definition-item.matched {
-    border: 1px solid #4ade80;
-}
-
-/* Correct match */
+/* Connecting Lines */
 .match-line.correct {
-    stroke: #10B981 !important; 
+    stroke: #10B981 !important;
+    stroke-width: 4px;
+    transition: stroke 0.3s ease-in-out;
 }
 
-/* Incorrect match */
 .match-line.incorrect {
-    stroke: #EF4444 !important; 
+    stroke: #EF4444 !important;
+    stroke-width: 4px;
+    transition: stroke 0.3s ease-in-out;
 }
 
-/* Reset button */
+/* Reset Button */
 .reset-button {
     background-color: #3b82f6;
     color: white;
     border: none;
-    padding: 14px 28px;
-    border-radius: 12px;
-    font-size: 1.1rem;
-    font-weight: 600;
-    margin: 0 auto;
+    padding: 14px 32px;
+    border-radius: 14px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin: 20px auto;
     display: block;
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
+    transition: all 0.3s ease-in-out;
+    box-shadow: 0 4px 6px rgba(59, 130, 246, 0.4);
 }
 
 .reset-button:hover {
-    background-color: #2563eb;
-    transform: translateY(-2px);
-    box-shadow: 0 7px 10px rgba(59, 130, 246, 0.35);
+    background-color: #1d4ed8;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 14px rgba(29, 78, 216, 0.5);
 }
 
 .reset-button:active {
     transform: translateY(1px);
 }
 
-/* Completion message */
+/* Completion Message */
 .completion-message {
     margin-top: 30px;
     text-align: center;
-    color: #3b82f6;
-    font-size: 1.5rem;
+    color: #2563eb;
+    font-size: 1.6rem;
     font-weight: 700;
-    padding: 16px;
+    padding: 18px;
+    background: rgba(59, 130, 246, 0.1);
+    border-radius: 12px;
     animation: fadeIn 1s ease-in-out;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 @keyframes fadeIn {
@@ -161,34 +167,22 @@
     }
 }
 
-/* Styling for connecting lines */
+/* Connecting Lines Container */
 .matching-lines-container {
     position: absolute;
     top: -32%;
-    left: 32.4%;
+    left: 32%;
     width: 100%;
-    height: 130%;
+    height: 140%;
     transform: translateX(-50%);
     pointer-events: none;
     z-index: 1;
 }
 
-/* SVG animation for the lines */
-@keyframes drawLine {
-    0% {
-        stroke-dasharray: 0 1000;
-        opacity: 0;
-    }
-    100% {
-        stroke-dasharray: 1000 0;
-        opacity: 1;
-    }
-}
-
-/* Responsive adjustments */
+/* Responsive Design */
 @media (max-width: 1024px) {
     .matching-columns {
-        gap: 100px; 
+        gap: 80px;
     }
 
     .term-item {
@@ -203,7 +197,7 @@
 @media (max-width: 768px) {
     .matching-columns {
         flex-direction: column;
-        gap: 50px;
+        gap: 60px;
     }
 
     .terms-column, .definitions-column {
@@ -211,7 +205,11 @@
         align-items: center;
     }
 
+    .term-item {
+        width: 90%;
+    }
+
     .definition-item {
-        width: 90%; 
+        width: 95%;
     }
 }
