@@ -9,11 +9,11 @@ import { HighlightedTextProvider } from "./context/HighlightedTextContext"; // I
 createRoot(document.getElementById("root")!).render(
   <BrowserRouter>
     <StrictMode>
-      <QuestionTypeProvider>
-        <HighlightedTextProvider>
+      <HighlightedTextProvider>
+        <QuestionTypeProvider>
           <App />
-        </HighlightedTextProvider>
-      </QuestionTypeProvider>
+        </QuestionTypeProvider>
+      </HighlightedTextProvider>
     </StrictMode>
   </BrowserRouter>
 );
