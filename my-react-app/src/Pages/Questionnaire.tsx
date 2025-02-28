@@ -80,12 +80,12 @@ const Questionnaire = () => {
                 <DivWithDropdown 
                     selectedType={firstSelectedType} 
                     setSelectedType={setFirstSelectedType}
-                    textValue={firstTextValue}  // ✅ Pass the first highlighted text 
+                    textValue={firstTextValue}  
                 />
                 <DivWithDropdown 
                     selectedType={secondSelectedType} 
                     setSelectedType={setSecondSelectedType} 
-                    textValue={secondTextValue}  // ✅ Pass the second highlighted text 
+                    textValue={secondTextValue} 
                 />
             </div>
              
