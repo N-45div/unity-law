@@ -7,7 +7,6 @@
     background-color: #f8fafc;
     border-radius: 16px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
-    /* overflow: hidden; ✅ Prevents scroll issues */
 }
 
 .matching-exercise-title {
@@ -25,7 +24,7 @@
     justify-content: center;
     align-items: center;
     position: relative;
-    gap: 160px; /* ✅ Increased spacing for better alignment */
+    gap: 160px; 
     margin-bottom: 40px;
 }
 
@@ -34,14 +33,14 @@
     display: flex;
     flex-direction: column;
     gap: 20px;
-    align-items: flex-end; /* ✅ Align terms properly */
+    align-items: flex-end; 
 }
 
 .definitions-column {
     display: flex;
     flex-direction: column;
     gap: 20px;
-    align-items: flex-start; /* ✅ Align definitions properly */
+    align-items: flex-start; 
 }
 
 /* Common styles for items */
@@ -64,7 +63,7 @@
     font-size: 1.2rem;
     border: none;
     min-height: 60px;
-    width: 260px; /* ✅ Adjusted width for better alignment */
+    width: 260px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -77,7 +76,7 @@
     border: 1px solid #e2e8f0;
     font-size: 1rem;
     line-height: 1.6;
-    width: 420px; /* ✅ Increased width for readability */
+    width: 420px; 
     padding: 16px 20px;
     text-align: left;
 }
@@ -105,12 +104,12 @@
 
 /* Correct match */
 .match-line.correct {
-    stroke: #10B981 !important; /* ✅ Green */
+    stroke: #10B981 !important; 
 }
 
 /* Incorrect match */
 .match-line.incorrect {
-    stroke: #EF4444 !important; /* ✅ Red */
+    stroke: #EF4444 !important; 
 }
 
 /* Reset button */
@@ -165,10 +164,10 @@
 /* Styling for connecting lines */
 .matching-lines-container {
     position: absolute;
-    top: -25%;
+    top: -32%;
     left: 32.4%;
     width: 100%;
-    height: 120%;
+    height: 130%;
     transform: translateX(-50%);
     pointer-events: none;
     z-index: 1;
@@ -189,7 +188,7 @@
 /* Responsive adjustments */
 @media (max-width: 1024px) {
     .matching-columns {
-        gap: 100px; /* ✅ Adjust spacing for medium screens */
+        gap: 100px; 
     }
 
     .term-item {
@@ -213,6 +212,6 @@
     }
 
     .definition-item {
-        width: 90%; /* ✅ Full width on small screens */
+        width: 90%; 
     }
 }
