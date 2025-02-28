@@ -1,0 +1,218 @@
+.matching-exercise-container {
+    padding: 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+    position: relative;
+    font-family: 'Inter', sans-serif;
+    background-color: #f8fafc;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    /* overflow: hidden; ✅ Prevents scroll issues */
+}
+
+.matching-exercise-title {
+    text-align: center;
+    color: #3b82f6;
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 50px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Container for terms and definitions */
+.matching-columns {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    gap: 160px; /* ✅ Increased spacing for better alignment */
+    margin-bottom: 40px;
+}
+
+/* Ensuring both columns are evenly spaced */
+.terms-column {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    align-items: flex-end; /* ✅ Align terms properly */
+}
+
+.definitions-column {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    align-items: flex-start; /* ✅ Align definitions properly */
+}
+
+/* Common styles for items */
+.term-item, .definition-item {
+    padding: 16px;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    position: relative;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Styling for term items */
+.term-item {
+    background: linear-gradient(120deg, #4ade80, #38bdf8);
+    color: #1e293b;
+    font-weight: 600;
+    font-size: 1.2rem;
+    border: none;
+    min-height: 60px;
+    width: 260px; /* ✅ Adjusted width for better alignment */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Styling for definition items */
+.definition-item {
+    background: white;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+    font-size: 1rem;
+    line-height: 1.6;
+    width: 420px; /* ✅ Increased width for readability */
+    padding: 16px 20px;
+    text-align: left;
+}
+
+/* Highlight selection */
+.term-item.selected,
+.definition-item.selected {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+    transform: translateY(-2px) scale(1.02);
+}
+
+/* Matched items */
+.term-item.matched,
+.definition-item.matched {
+    opacity: 0.85;
+}
+
+.term-item.matched {
+    background: linear-gradient(120deg, #4ade80, #38bdf8);
+}
+
+.definition-item.matched {
+    border: 1px solid #4ade80;
+}
+
+/* Correct match */
+.match-line.correct {
+    stroke: #10B981 !important; /* ✅ Green */
+}
+
+/* Incorrect match */
+.match-line.incorrect {
+    stroke: #EF4444 !important; /* ✅ Red */
+}
+
+/* Reset button */
+.reset-button {
+    background-color: #3b82f6;
+    color: white;
+    border: none;
+    padding: 14px 28px;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0 auto;
+    display: block;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
+}
+
+.reset-button:hover {
+    background-color: #2563eb;
+    transform: translateY(-2px);
+    box-shadow: 0 7px 10px rgba(59, 130, 246, 0.35);
+}
+
+.reset-button:active {
+    transform: translateY(1px);
+}
+
+/* Completion message */
+.completion-message {
+    margin-top: 30px;
+    text-align: center;
+    color: #3b82f6;
+    font-size: 1.5rem;
+    font-weight: 700;
+    padding: 16px;
+    animation: fadeIn 1s ease-in-out;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Styling for connecting lines */
+.matching-lines-container {
+    position: absolute;
+    top: -25%;
+    left: 32.4%;
+    width: 100%;
+    height: 120%;
+    transform: translateX(-50%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* SVG animation for the lines */
+@keyframes drawLine {
+    0% {
+        stroke-dasharray: 0 1000;
+        opacity: 0;
+    }
+    100% {
+        stroke-dasharray: 1000 0;
+        opacity: 1;
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+    .matching-columns {
+        gap: 100px; /* ✅ Adjust spacing for medium screens */
+    }
+
+    .term-item {
+        width: 240px;
+    }
+
+    .definition-item {
+        width: 380px;
+    }
+}
+
+@media (max-width: 768px) {
+    .matching-columns {
+        flex-direction: column;
+        gap: 50px;
+    }
+
+    .terms-column, .definitions-column {
+        width: 100%;
+        align-items: center;
+    }
+
+    .definition-item {
+        width: 90%; /* ✅ Full width on small screens */
+    }
+}
