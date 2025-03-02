@@ -5,7 +5,7 @@ import Level2 from "./Pages/Level2";
 import LevelTwoPart_Two from "./Pages/Level2_PartTwo";
 import Questionnaire from "./Pages/Questionnaire";
 import Live_Generation from "./Pages/Live_Generation";
-import Live_Generation_2 from "./Pages/Live_Generation_2";
+// import Live_Generation_2 from "./Pages/Live_Generation_2";
 import Finish from "./Pages/Finish";
 import { HighlightedTextProvider } from "./context/HighlightedTextContext";
 
@@ -19,7 +19,7 @@ const App = () => {
         <Route path="Level-Two-Part-Two" element={<LevelTwoPart_Two/>}/>
         <Route path="Questionnaire" element={<Questionnaire />}/>
         <Route path="Live_Generation" element={<Live_Generation />}/>
-        <Route path="Live_Generation_2" element={<Live_Generation_2 />}/>
+        {/* <Route path="Live_Generation_2" element={<Live_Generation_2 />}/> */}
         <Route path="Finish" element={<Finish />} />
       </Routes>
     </HighlightedTextProvider>

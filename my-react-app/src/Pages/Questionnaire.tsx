@@ -1,109 +1,322 @@
+// Questionnaire.tsx
+
 import Navbar from "../components/Navbar";
 import { FaChevronDown, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { useState, useEffect } from "react";
 import { useQuestionType } from "../context/QuestionTypeContext";
 import { useHighlightedText } from "../context/HighlightedTextContext";
-import { determineQuestionType } from "../utils/questionTypeUtils";
+import { determineQuestionType, numberTypes, radioTypes, textTypes, validateQuestionRelevance, QuestionType } from "../utils/questionTypeUtils";
+
+// Inside Questionnaire.tsx (combined with DivWithDropdown)
 
 interface DivWithDropdownProps {
-    selectedType: string | null; 
-    setSelectedType: (type: string) => void; 
-    textValue?: string; 
+    textValue: string;
+    index: number;
+    onTypeChange: (index: number, type: string) => void;
+    onQuestionTextChange: (index: number, newText: string) => void;
+    initialQuestionText: string;
 }
 
-const DivWithDropdown: React.FC<DivWithDropdownProps> = ({ selectedType, setSelectedType, textValue = "" }) => {
-    const [questionText, setQuestionText] = useState("");
+const DivWithDropdown: React.FC<DivWithDropdownProps> = ({
+    textValue,
+    index,
+    onTypeChange,
+    onQuestionTextChange,
+    initialQuestionText,
+}) => {
+    const [questionText, setQuestionText] = useState(initialQuestionText || "No text selected");
+    const [selectedType, setSelectedType] = useState<string>("Text");
+    const [isOpen, setIsOpen] = useState(false);
+    const { selectedTypes } = useQuestionType();
+    const { highlightedTexts } = useHighlightedText();
+    const {
+        primaryType,
+        primaryValue,
+        validTypes,
+    } = determineQuestionType(textValue);
 
     useEffect(() => {
-        const { value } = determineQuestionType(textValue); 
-        setQuestionText(value); 
-        const { type } = determineQuestionType(textValue);
+      // Default to Radio for probationary period clause
+      const probationClause = "[The first [Probation Period Length] of employment will be a probationary period. The Company shall assess the Employee's performance and suitability during this time. The Company may extend the probationary period by up to [Probation Extension Length] if further assessment is required. During the probationary period, either party may terminate the employment by providing [one week's] written notice. Upon successful completion, the Employee will be confirmed in their role.]";
+      if (highlightedTexts[index] === probationClause) {
+          setSelectedType("Radio");
+          onTypeChange(index, "Radio");
+          //Only updating the question text in first render
+          if (questionText === "No text selected" || questionText === initialQuestionText) {
+              setQuestionText("Is the clause of probationary period applicable?");
+              onQuestionTextChange(index, "Is the clause of probationary period applicable?");
+          }
+      } else {
+          if (selectedTypes[index]) {
+              setSelectedType(selectedTypes[index]);
+          } else {
+              setSelectedType(primaryType);
+          }
+  
+          let defaultText = primaryValue || "No text selected";
+          const currentType = selectedTypes[index]?.toLowerCase() || primaryType.toLowerCase();
+  
+          if (currentType === "radio" && primaryValue) {
+              defaultText = primaryValue;
+          } else if (currentType === "text" && primaryValue) {
+              defaultText = primaryValue;
+          } else if (currentType === "number" && primaryValue) {
+              defaultText = primaryValue;
+          }
+  
+          if (questionText === "No text selected") {
+              setQuestionText(defaultText);
+              onQuestionTextChange(index, defaultText);
+          }
+      }
+  }, [selectedTypes, index, primaryValue, primaryType, initialQuestionText, questionText, onTypeChange, onQuestionTextChange, highlightedTexts]);
+  
+    const handleTypeSelect = (type: string) => {
+        const validType = validTypes.includes(type as QuestionType);
+        if (!validType) {
+            alert(
+                `Only ${validTypes.join(", ")} type questions can be made for this question. Please select an appropriate type.`
+            );
+            return;
+        }
+
+        // Enforce Radio for probationary clause
+        const probationClause = "[The first [Probation Period Length] of employment will be a probationary period. The Company shall assess the Employee's performance and suitability during this time. The Company may extend the probationary period by up to [Probation Extension Length] if further assessment is required. During the probationary period, either party may terminate the employment by providing [one week's] written notice. Upon successful completion, the Employee will be confirmed in their role.]";
+        if (highlightedTexts[index] === probationClause && type !== "Radio") {
+            alert("This question must be of Radio type for the probationary period clause.");
+            return;
+        }
+
         setSelectedType(type);
-    }, [textValue, setSelectedType]);
+        onTypeChange(index, type);
+
+        let newQuestionText = questionText;
+        if (
+            questionText === primaryValue ||
+            questionText === "No text selected"
+        ) {
+            if (type.toLowerCase() === "radio" && primaryValue) {
+                newQuestionText = primaryValue;
+            } else if (type.toLowerCase() === "text" && primaryValue) {
+                newQuestionText = primaryValue;
+            } else if (type.toLowerCase() === "number" && primaryValue) {
+                newQuestionText = primaryValue;
+            }
+            setQuestionText(newQuestionText);
+            onQuestionTextChange(index, newQuestionText);
+        }
+        setIsOpen(false);
+    };
+
+    const handleQuestionTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newText = e.target.value;
+        // Removed validation check to allow free editing
+        setQuestionText(newText);
+        onQuestionTextChange(index, newText);
+    };
+
+    const dropdownOptions = ["Text", "Paragraph", "Email", "Radio", "Number"];
 
     return (
-        <div className="flex items-center space-x-20">
+        <div className="flex items-center space-x-20 w-full">
             <button className="flex flex-col justify-between h-10 w-10 p-1">
                 <span className="block h-1 w-20 bg-black rounded"></span>
                 <span className="block h-1 w-20 bg-black rounded"></span>
                 <span className="block h-1 w-20 bg-black rounded"></span>
             </button>
-            <div className="relative w-200 h-40 bg-lime-300 rounded-lg shadow-md flex flex-col items-center justify-center text-black text-lg font-semibold p-4">      
-                <div className="relative w-full flex items-center space-x-2">
-                    <div className="h-0.5 w-2/5 bg-black absolute left-0"></div>
-                    <span className="px-2 py-1 text-sm bg-transparent w-2/5 relative z-10 top-[-14px] max-w-full overflow-hidden text-ellipsis">
-                        {questionText || "No text selected"}
-                    </span>
+            <div className="relative w-200 h-40 bg-lime-300 rounded-lg shadow-md flex flex-col items-center justify-center text-black text-lg font-semibold p-4 z-10">
+                <div className="relative w-full flex items-center">
+                    <label className="px-2 py-1 text-sm bg-transparent w-full text-left">
+                        {questionText || "Edit question text"}
+                    </label>
                 </div>
 
+
                 <div className="absolute top-1/2 right-10 transform -translate-y-1/2 flex items-center space-x-2">
-                    <span className="text-black text-sm">{selectedType ?? "Unknown Type"}</span>
+                    <div className="relative">
+                        <button
+                            className="flex items-center space-x-2 text-black text-sm bg-white px-2 py-1 rounded"
+                            onClick={() => setIsOpen(!isOpen)}
+                        >
+                            <span>{selectedType}</span>
+                            <FaChevronDown />
+                        </button>
+                        {isOpen && (
+                            <div className="absolute right-0 mt-2 w-40 bg-white border rounded shadow-lg z-50">
+                                {dropdownOptions.map((type) => (
+                                    <div
+                                        key={type}
+                                        className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                                        onClick={() => handleTypeSelect(type)}
+                                    >
+                                        {type}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
     );
 };
 
-
 const Questionnaire = () => {
     const [leftActive, setLeftActive] = useState(true);
     const [rightActive, setRightActive] = useState(false);
-    const { firstSelectedType, secondSelectedType, setFirstSelectedType, setSecondSelectedType } = useQuestionType();
     const { highlightedTexts } = useHighlightedText();
+    const { selectedTypes, setSelectedTypes } = useQuestionType();
+    const [uniqueQuestions, setUniqueQuestions] = useState<string[]>([]);
+    const [duplicateDetected, setDuplicateDetected] = useState<boolean>(false);
+    const [questionTexts, setQuestionTexts] = useState<string[]>([]);
 
-    // Take the first two highlighted texts (if available)
-    const firstTextValue = highlightedTexts[0] || ""; 
-    const secondTextValue = highlightedTexts[1] || "";
+    useEffect(() => {
+        const processedTexts = [];
+        const questionMap = new Map();
+
+        for (const text of highlightedTexts) {
+            const { primaryValue } = determineQuestionType(text);
+            
+            if (primaryValue && !questionMap.has(primaryValue)) {
+                questionMap.set(primaryValue, text);
+                processedTexts.push(text);
+            } else if (primaryValue && questionMap.get(primaryValue) === text) {
+                // Only set duplicate to true if the exact text already exists in questionMap
+                setDuplicateDetected(true);
+                setTimeout(() => setDuplicateDetected(false), 3000);
+            }
+        }
+
+        setUniqueQuestions(processedTexts);
+        const initialTexts = processedTexts.map(
+            (text) => determineQuestionType(text).primaryValue || "No text selected"
+        );
+        const initialTypes = processedTexts.map((text) => {
+            const probationClause = "[The first [Probation Period Length] of employment will be a probationary period. The Company shall assess the Employee's performance and suitability during this time. The Company may extend the probationary period by up to [Probation Extension Length] if further assessment is required. During the probationary period, either party may terminate the employment by providing [one week's] written notice. Upon successful completion, the Employee will be confirmed in their role.]";
+            if (text === probationClause) return "Radio";
+            if (textTypes.hasOwnProperty(text)) return "Text";
+            if (numberTypes.hasOwnProperty(text)) return "Number";
+            if (radioTypes.hasOwnProperty(text)) return "Radio";
+            return "Text";
+        });
+        setQuestionTexts(initialTexts);
+        setSelectedTypes(initialTypes);
+    }, [highlightedTexts, setSelectedTypes]);
+
+    const handleTypeChange = (index: number, type: string) => {
+        const textValue = uniqueQuestions[index];
+        const { validTypes } = determineQuestionType(textValue);
+        const validType = validTypes.includes(type as QuestionType);
+        if (!validType) {
+            alert(
+                `Only ${validTypes.join(", ")} type questions can be made for this question. Please select an appropriate type.`
+            );
+            return;
+        }
+
+        const newTypes = [...selectedTypes];
+        newTypes[index] = type;
+        setSelectedTypes(newTypes);
+
+        const { primaryValue } = determineQuestionType(textValue);
+        const newTexts = [...questionTexts];
+        if (
+            newTexts[index] === primaryValue ||
+            newTexts[index] === "No text selected"
+        ) {
+            if (type.toLowerCase() === "radio" && primaryValue) {
+                newTexts[index] = primaryValue;
+            } else if (type.toLowerCase() === "text" && primaryValue) {
+                newTexts[index] = primaryValue;
+            } else if (type.toLowerCase() === "number" && primaryValue) {
+                newTexts[index] = primaryValue;
+            }
+            setQuestionTexts(newTexts);
+        }
+    };
+
+    const handleQuestionTextChange = (index: number, newText: string) => {
+        // Also removed validation in the parent component to allow free editing
+        const newTexts = [...questionTexts];
+        newTexts[index] = newText;
+        setQuestionTexts(newTexts);
+    };
 
     return (
         <div className="min-h-screen flex flex-col bg-gradient-to-r from-green-100 via-purple-100 to-blue-100 relative">
             <Navbar />
             <div className="absolute top-16 right-6 w-80 h-10 bg-lime-300 rounded-lg shadow-md flex items-center justify-center text-black text-sm font-semibold">
                 <div className="flex items-center space-x-4">
-                    <div className={`flex items-center space-x-2 ${leftActive ? "text-gray-600" : "text-blue-600"}`}>
+                    <div
+                        className={`flex items-center space-x-2 ${leftActive ? "text-gray-600" : "text-blue-600"
+                            }`}
+                    >
                         <span>Employer</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                        <button onClick={() => { setLeftActive(true); setRightActive(false); }}>
+                        <button
+                            onClick={() => {
+                                setLeftActive(true);
+                                setRightActive(false);
+                            }}
+                        >
                             <FaChevronLeft className="text-xl hover:scale-110" />
                         </button>
-                        <button onClick={() => { setRightActive(true); setLeftActive(false); }}>
+                        <button
+                            onClick={() => {
+                                setRightActive(true);
+                                setLeftActive(false);
+                            }}
+                        >
                             <FaChevronRight className="text-xl hover:scale-110" />
                         </button>
                     </div>
-                    <div className={`flex items-center space-x-2 ${rightActive ? "text-gray-600" : "text-blue-600"}`}>
+                    <div
+                        className={`flex items-center space-x-2 ${rightActive ? "text-gray-600" : "text-blue-600"
+                            }`}
+                    >
                         <span>Employee</span>
                     </div>
                 </div>
             </div>
-            <div className="flex-grow flex flex-col items-center justify-center space-y-20">
-                <DivWithDropdown 
-                    selectedType={firstSelectedType} 
-                    setSelectedType={setFirstSelectedType}
-                    textValue={firstTextValue}  
-                />
-                <DivWithDropdown 
-                    selectedType={secondSelectedType} 
-                    setSelectedType={setSecondSelectedType} 
-                    textValue={secondTextValue} 
-                />
-            </div>
-             
-            {/* <div className="absolute bottom-50 left-10 bg-white p-4 shadow-md rounded-lg">
-                <h3 className="text-lg font-semibold">Questions: </h3>
-                <ul>
-                    {highlightedTexts.length > 0 ? (
-                        highlightedTexts.map((text, index) => (
-                            <li key={index}>What would you like to change {text} to?</li>
+
+            {duplicateDetected && (
+                <div className="absolute top-28 right-6 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded shadow-md transition-opacity duration-400">
+                    <p className="font-bold">Duplicate Question</p>
+                    <p>This question already exists in the questionnaire.</p>
+                </div>
+            )}
+
+            <div className="flex-grow flex flex-col items-center justify-center pt-16 pb-8 px-4 overflow-y-auto">
+                <div className="space-y-10 w-full max-w-3xl">
+                    {uniqueQuestions.length > 0 ? (
+                        uniqueQuestions.map((text, index) => (
+                            <DivWithDropdown
+                                key={index}
+                                textValue={text}
+                                index={index}
+                                onTypeChange={handleTypeChange}
+                                onQuestionTextChange={handleQuestionTextChange}
+                                initialQuestionText={questionTexts[index]}
+                            />
                         ))
                     ) : (
-                        <li>No questions yet.</li>
+                        <div className="text-center py-10">
+                            <p className="text-gray-600">No text has been selected yet.</p>
+                            <p className="text-gray-500 text-sm mt-2">
+                                Go to the Document tab and select text in square brackets to
+                                generate questions.
+                            </p>
+                        </div>
                     )}
-                </ul>
-            </div> */}
+                </div>
+            </div>
         </div>
     );
 };
 
-
 export default Questionnaire;
+
+
+
+// original
