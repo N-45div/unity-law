@@ -12,7 +12,7 @@ const App = () => {
       <Route path="/" element={<HomePage />} />
       <Route path="/Level-One-Quiz" element={<LevelOneQuizPage />} />
       <Route path="/Level-Two-Quiz" element={<LevelTwoQuiz />} />
-      <Route path="/Level-Two-Quiz" element={<MatchingExercise data={matchingData} />} />
+      <Route path="/Level-Two-Quiz-match" element={<MatchingExercise data={matchingData} />} />
     </Routes>
   );
 };
