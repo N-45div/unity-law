@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Navbar from "../components/Navbar";
 import { determineQuestionType, textTypes, numberTypes, radioTypes, QuestionType } from "../utils/questionTypeUtils";
 import { documentText } from "../utils/EmploymentAgreement";
@@ -14,6 +14,7 @@ const extractClauses = (documentText: string) => {
       clauses.push(`<h2${section}`);
     }
   });
+  console.log("Extracted clauses:", clauses); // Debug log
   return clauses;
 };
 
@@ -37,6 +38,7 @@ const mapQuestionsToClauses = (
           const question = textTypes[key];
           if (priorityMappings.hasOwnProperty(question)) {
             questionClauseMap[question] = clause;
+            console.log(`Mapped ${question} to PARTIES clause with placeholder ${placeholder}`); // Debug log
           }
         }
       });
@@ -46,6 +48,7 @@ const mapQuestionsToClauses = (
       const placeholder = `[${key}]`;
       if (!priorityMappings.hasOwnProperty(textTypes[key]) && clause.includes(placeholder)) {
         questionClauseMap[textTypes[key]] = clause;
+        console.log(`Mapped ${textTypes[key]} to clause with ${placeholder}`); // Debug log
       }
     });
 
@@ -53,10 +56,10 @@ const mapQuestionsToClauses = (
       const placeholder = `[${key}]`;
       if (clause.includes(placeholder)) {
         questionClauseMap[numberTypes[key]] = clause;
+        console.log(`Mapped ${numberTypes[key]} to clause with ${placeholder}`); // Debug log
       }
     });
 
-    // Handle radio types, including the full probationary clause and its related questions
     const fullProbationClause = "The first [Probation Period Length] of employment will be a probationary period. The Company shall assess the Employee’s performance and suitability during this time. The Company may extend the probationary period by up to [Probation Extension Length] if further assessment is required. During the probationary period, either party may terminate the employment by providing [one week's] written notice. Upon successful completion, the Employee will be confirmed in their role.";
     const smallConditionClause = "The Employee may also be entitled to Company sick pay";
     
@@ -64,6 +67,7 @@ const mapQuestionsToClauses = (
       const placeholder = `[${key}]`;
       if (clause.includes(placeholder) || clause.includes(fullProbationClause) || clause.includes(smallConditionClause)) {
         questionClauseMap[radioTypes[key]] = clause;
+        console.log(`Mapped ${radioTypes[key]} to clause with ${placeholder || fullProbationClause}`); // Debug log
       }
     });
 
@@ -71,20 +75,24 @@ const mapQuestionsToClauses = (
     if (clause.includes(fullProbationClause)) {
       questionClauseMap["What's the probation period length?"] = clause;
       questionClauseMap["What's the probation extension length?"] = clause;
+      console.log(`Mapped probation follow-ups to ${fullProbationClause}`); // Debug log
     }
   });
 
+  // Fallback to ensure all highlighted questions get a clause
   Object.keys(priorityMappings).forEach((question) => {
-    if (!questionClauseMap[question] && priorityMappings[question] === "PARTIES") {
+    if (!questionClauseMap[question]) {
       const partiesClause = clauses.find((clause) =>
         clause.includes('<h2 className="text-2xl font-bold">PARTIES</h2>')
       );
       if (partiesClause) {
         questionClauseMap[question] = partiesClause;
+        console.log(`Fallback mapped ${question} to PARTIES clause`); // Debug log
       }
     }
   });
 
+  console.log("Final questionClauseMap:", questionClauseMap); // Debug log
   return questionClauseMap;
 };
 
@@ -92,14 +100,12 @@ const Live_Generation = () => {
   const navigation = useNavigate();
   const { highlightedTexts } = useHighlightedText();
   const { selectedTypes } = useQuestionType();
-  const [question, setQuestion] = useState<{ type: QuestionType; value: string }>({
-    type: "Unknown",
-    value: "",
-  });
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [questionClauseMap, setQuestionClauseMap] = useState<{ [key: string]: string }>({});
   const [userAnswers, setUserAnswers] = useState<{ [key: string]: string | boolean }>(initializeUserAnswers(highlightedTexts, selectedTypes));
   const [skippedQuestions, setSkippedQuestions] = useState<string[]>([]);
+  const [highlightedPlaceholder, setHighlightedPlaceholder] = useState<{ [key: string]: boolean }>({}); // Track highlighted placeholders per question
+  const previewRefs = useRef<(HTMLDivElement | null)[]>([]); // Reintroduced
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]); // Reintroduced
 
   // Helper function to initialize userAnswers with default values
   function initializeUserAnswers(highlightedTexts: string[], selectedTypes: (string | null)[]): { [key: string]: string | boolean } {
@@ -116,25 +122,21 @@ const Live_Generation = () => {
 
   // Helper function to update the clause based on the answer
   const getUpdatedClause = (clause: string, placeholder: string, answer: string | boolean): string => {
-    console.log("getUpdatedClause called with:", { clause, placeholder, answer }); // Debug log
+    if (!clause) return ""; // Return empty string if clause is undefined
     const fullProbationClause = "The first [Probation Period Length] of employment will be a probationary period. The Company shall assess the Employee’s performance and suitability during this time. The Company may extend the probationary period by up to [Probation Extension Length] if further assessment is required. During the probationary period, either party may terminate the employment by providing [one week's] written notice. Upon successful completion, the Employee will be confirmed in their role.";
     const smallConditionClause = "The Employee may also be entitled to Company sick pay";
     const probationQuestion = "Is the clause of probationary period applicable?";
     const smallConditionQuestion = "Prachi - Is the clause of Company sick pay applicable?";
 
-    // Check if the clause is the probationary clause or its follow-ups
     if (clause.includes(fullProbationClause)) {
       const isApplicable = userAnswers[probationQuestion] as boolean || false;
-      console.log("Probation clause check:", { isApplicable, placeholder });
-
-      if (placeholder === "" || placeholder === probationQuestion) { // For the main probationary question
+      if (placeholder === "" || placeholder === probationQuestion) {
         return isApplicable ? `<div className="p-4 text-blue-600" style="opacity: 1;">${clause}</div>` : `<div className="p-4 text-blue-600" style="opacity: 0.2;">${clause}</div>`;
       }
-
-      if (placeholder === "Probation Period Length" || placeholder === "Probation Extension Length") { // For follow-up questions
+      if (placeholder === "Probation Period Length" || placeholder === "Probation Extension Length") {
         return isApplicable ? clause.replace(
           new RegExp(`\\[${placeholder.replace(/\s+/g, " ").trim()}\\]`, "gi"),
-          answer ? answer.toString().trim() : `[${placeholder}]`
+          answer ? `<span class="${highlightedPlaceholder[placeholder] ? 'bg-lime-300' : ''}">${answer.toString().trim()}</span>` : `[${placeholder}]`
         ) : `<div className="p-4 text-blue-600" style="opacity: 0.2;">${clause}</div>`;
       }
     }
@@ -147,29 +149,29 @@ const Live_Generation = () => {
 
     // Handle all other clauses (non-probationary) normally
     if (typeof answer === "boolean") {
-      return answer ? clause : "";
+      return answer ? (clause || "") : "";
     }
-    return `<div className="p-4 text-blue-600" style="opacity: 1;">${clause.replace(
+    return `<div className="p-4 text-blue-600">${clause.replace(
       new RegExp(`\\[${placeholder.replace(/\s+/g, " ").trim()}\\]`, "gi"),
-      answer || `[${placeholder}]`
+      answer ? `<span class="${highlightedPlaceholder[placeholder] ? 'bg-lime-300' : ''}">${answer}</span>` : `[${placeholder}]`
     )}</div>`;
   };
 
-  // Helper function to format date answers (optional, kept for consistency, but not used for text like "1 month")
+  // Helper function to format date answers
   const formatDateAnswer = (answer: string): string => {
-    const cleanedAnswer = answer.trim().replace(/[^0-9A-Za-z\s/]/g, ''); // Remove special characters except numbers, letters, spaces, and slashes
+    const cleanedAnswer = answer.trim().replace(/[^0-9A-Za-z\s/]/g, '');
     if (cleanedAnswer.includes('/')) {
       const dateParts = cleanedAnswer.split('/').map(part => part.trim());
       if (dateParts.length === 3 && dateParts.every(part => !isNaN(Number(part)))) {
         const [month, day, year] = dateParts;
         const formattedMonth = month.padStart(2, '0');
         const formattedDay = day.padStart(2, '0');
-        const formattedYear = year.length === 2 ? `20${year}` : year; // Assume 2-digit year is 20XX
+        const formattedYear = year.length === 2 ? `20${year}` : year;
         return `${formattedMonth}/${formattedDay}/${formattedYear}`;
       }
-      return cleanedAnswer; // Return as-is if not a valid date, preserving text like "1 month"
+      return cleanedAnswer;
     }
-    return cleanedAnswer; // Return cleaned text for non-date inputs like "1 month"
+    return cleanedAnswer;
   };
 
   useEffect(() => {
@@ -179,62 +181,31 @@ const Live_Generation = () => {
   }, []);
 
   useEffect(() => {
-    const questionText = highlightedTexts[currentQuestionIndex] || "";
-    const { primaryType, primaryValue } = determineQuestionType(questionText);
-    const selectedType = selectedTypes[currentQuestionIndex] || primaryType;
-
-    let finalQuestion = { type: "Unknown" as QuestionType, value: "" };
-    if (selectedType === "Text") {
-      finalQuestion = { type: "Text", value: primaryValue || "" };
-    } else if (selectedType === "Number") {
-      finalQuestion = { type: "Number", value: primaryValue || "" };
-    } else if (selectedType === "Radio") {
-      finalQuestion = { type: "Radio", value: primaryValue || "" };
-    }
-    setQuestion(finalQuestion);
-  }, [currentQuestionIndex, highlightedTexts, selectedTypes]);
-
-  // Separate useEffect for handling probationary clause and skipped questions
-  useEffect(() => {
     const probationQuestion = "Is the clause of probationary period applicable?";
     const followUpQuestions = ["What's the probation period length?", "What's the probation extension length?"];
     const isApplicable = userAnswers[probationQuestion] as boolean || false;
 
     if (!isApplicable) {
-      setSkippedQuestions(followUpQuestions); // Set skipped questions only if "No" is selected
+      setSkippedQuestions(followUpQuestions);
     } else {
-      setSkippedQuestions([]); // Clear skipped questions if "Yes" is selected
+      setSkippedQuestions([]);
     }
-  }, [userAnswers["Is the clause of probationary period applicable?"]]); // Only depend on the probation question answer
+  }, [userAnswers["Is the clause of probationary period applicable?"]]);
 
-  const handleNextQuestion = () => {
-    if (currentQuestionIndex < highlightedTexts.length - 1) {
-      const nextIndex = currentQuestionIndex + 1;
-      const nextQuestion = highlightedTexts[nextIndex] || "";
-      const { primaryValue } = determineQuestionType(nextQuestion);
-      if (skippedQuestions.includes(primaryValue)) {
-        if (nextIndex < highlightedTexts.length - 1) {
-          setCurrentQuestionIndex(nextIndex + 1);
-        } else {
-          setCurrentQuestionIndex(nextIndex);
-        }
-      } else {
-        setCurrentQuestionIndex(nextIndex);
-      }
-    }
-  };
+  const handleAnswerChange = (index: number, value: string | boolean) => {
+    const { primaryValue } = determineQuestionType(highlightedTexts[index] || "");
+    const currentType = selectedTypes[index] || "Text";
+    const placeholder = Object.keys(textTypes).find(key => textTypes[key] === primaryValue) ||
+                      Object.keys(numberTypes).find(key => numberTypes[key] === primaryValue) ||
+                      Object.keys(radioTypes).find(key => radioTypes[key] === primaryValue) || "";
 
-  const handlePreviousQuestion = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(currentQuestionIndex - 1);
-    }
-  };
+    console.log("Handling answer change for:", { primaryValue, value, currentType, index, placeholder });
 
-  const handleAnswerChange = (value: string | boolean) => {
-    const { primaryValue } = determineQuestionType(highlightedTexts[currentQuestionIndex] || "");
-    const currentType = selectedTypes[currentQuestionIndex] || "Text";
-
-    console.log("Handling answer change for:", { primaryValue, value, currentType }); // Debug log
+    // Highlight the placeholder persistently for the current question
+    setHighlightedPlaceholder(prev => ({
+      ...prev,
+      [placeholder || '']: true,
+    }));
 
     setUserAnswers((prev) => ({
       ...prev,
@@ -242,6 +213,8 @@ const Live_Generation = () => {
     }));
   };
 
+  const renderAnswerInput = (index: number) => {
+    const questionText = highlightedTexts[index] || "";
   // Helper function to get the correct clause for the current question with conditional opacity
   const getClauseForQuestion = (question: string, questionClauseMap: { [key: string]: string }, userAnswers: { [key: string]: string | boolean }): string => {
     console.log("getClauseForQuestion called with:", { question, userAnswers }); // Debug log
@@ -293,10 +266,9 @@ const Live_Generation = () => {
     return updatedDoc;
   };
 
-  const renderAnswerInput = () => {
-    const questionText = highlightedTexts[currentQuestionIndex] || "";
+
     const { primaryValue } = determineQuestionType(questionText);
-    const currentType = selectedTypes[currentQuestionIndex] || "Text";
+    const currentType = selectedTypes[index] || "Text";
     const answer = userAnswers[primaryValue] || (currentType === "Radio" ? false : "");
     const isProbationFollowUp = primaryValue === "What's the probation period length?" || primaryValue === "What's the probation extension length?";
     const isProbationApplicable = userAnswers["Is the clause of probationary period applicable?"] === true;
@@ -313,9 +285,10 @@ const Live_Generation = () => {
       case "Text":
         return (
           <input
+            ref={el => { if (el) inputRefs.current[index] = el; }} // Safe ref assignment
             type="text"
             value={typeof answer === "string" ? answer : ""}
-            onChange={(e) => handleAnswerChange(e.target.value)}
+            onChange={(e) => handleAnswerChange(index, e.target.value)}
             className="mt-4 p-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600"
             placeholder="Enter your text answer"
           />
@@ -323,11 +296,12 @@ const Live_Generation = () => {
       case "Number":
         return (
           <input
-            type="text" // Allow both text and numbers (e.g., dates)
+            ref={el => { if (el) inputRefs.current[index] = el; }} // Safe ref assignment
+            type="text"
             value={typeof answer === "string" ? answer : ""}
-            onChange={(e) => handleAnswerChange(e.target.value)}
+            onChange={(e) => handleAnswerChange(index, formatDateAnswer(e.target.value))}
             className="mt-4 p-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600"
-            placeholder="Enter a number or text (e.g., date in MM/DD/YYYY or DD/MM/YYYY)"
+            placeholder="Enter a number or text"
           />
         );
       case "Radio":
@@ -336,20 +310,20 @@ const Live_Generation = () => {
             <label>
               <input
                 type="radio"
-                name={`answer-${currentQuestionIndex}`}
+                name={`answer-${index}`}
                 value="true"
                 checked={answer === true}
-                onChange={() => handleAnswerChange(true)}
+                onChange={() => handleAnswerChange(index, true)}
               />
               Yes
             </label>
             <label>
               <input
                 type="radio"
-                name={`answer-${currentQuestionIndex}`}
+                name={`answer-${index}`}
                 value="false"
                 checked={answer === false}
-                onChange={() => handleAnswerChange(false)}
+                onChange={() => handleAnswerChange(index, false)}
               />
               No
             </label>
@@ -358,9 +332,10 @@ const Live_Generation = () => {
       default:
         return (
           <input
+            ref={el => { if (el) inputRefs.current[index] = el; }} // Safe ref assignment
             type="text"
             value={typeof answer === "string" ? answer : ""}
-            onChange={(e) => handleAnswerChange(e.target.value)}
+            onChange={(e) => handleAnswerChange(index, e.target.value)}
             className="mt-4 p-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600"
             placeholder="Enter your answer"
           />
@@ -368,28 +343,87 @@ const Live_Generation = () => {
     }
   };
 
+  const getClauseForQuestion = (question: string, index: number): string => {
+    console.log("getClauseForQuestion called with:", { question, index, questionClauseMap });
+    const fullProbationClause = "The first [Probation Period Length] of employment will be a probationary period. The Company shall assess the Employee’s performance and suitability during this time. The Company may extend the probationary period by up to [Probation Extension Length] if further assessment is required. During the probationary period, either party may terminate the employment by providing [one week's] written notice. Upon successful completion, the Employee will be confirmed in their role.";
+    const probationQuestion = "Is the clause of probationary period applicable?";
+    const followUpQuestions = ["What's the probation period length?", "What's the probation extension length?"];
+
+    if (question === probationQuestion) {
+      const answer = userAnswers[probationQuestion] || false;
+      const clause = questionClauseMap[question] || fullProbationClause;
+      return getUpdatedClause(clause || "", "", answer); // Ensure clause is a string
+    } else if (followUpQuestions.includes(question)) {
+      const placeholder = question === "What's the probation period length?" ? "Probation Period Length" : "Probation Extension Length";
+      const isApplicable = userAnswers[probationQuestion] as boolean || false;
+      const answer = userAnswers[question] || "";
+      const clause = questionClauseMap[question] || fullProbationClause || findClauseByPlaceholder(placeholder); // Fallback
+      return isApplicable ? getUpdatedClause(clause || "", placeholder, answer) : `<div className="p-4 text-blue-600" style="opacity: 0.2;">${clause || ""}</div>`;
+    }
+
+    const placeholder = Object.keys(textTypes).find(key => textTypes[key] === question) ||
+                       Object.keys(numberTypes).find(key => numberTypes[key] === question) ||
+                       Object.keys(radioTypes).find(key => radioTypes[key] === question) || "";
+    let clause = questionClauseMap[question] || "";
+    if (!clause && placeholder) {
+      clause = findClauseByPlaceholder(placeholder) || ""; // Fallback to search documentText
+    }
+    return getUpdatedClause(clause, placeholder || "", userAnswers[question] || "");
+  };
+
+  // Helper function to find clause by placeholder in documentText
+  const findClauseByPlaceholder = (placeholder: string): string | undefined => {
+    const sections = documentText.split("<h2");
+    for (const section of sections) {
+      if (section.includes(placeholder)) {
+        return `<h2${section}`;
+      }
+    }
+    return undefined;
+  };
+
+  const handleFinish = () => {
+    navigation("/Finish", { state: { userAnswers } });
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-r from-green-100 via-purple-100 to-blue-100 relative">
       <Navbar />
       <div className="flex-grow flex items-center justify-center">
-        <div className="flex w-full max-w-6xl">
+        <div className="flex flex-col w-full p-8">
           {highlightedTexts.length > 0 ? (
             <>
-              <div className="w-1/2 p-8">
-                <h2 className="text-2xl font-bold mb-4">Question</h2>
-                <p>{question.value}</p>
-                {renderAnswerInput()}
-              </div>
-              <div className="w-1/2 p-8 bg-white rounded-lg shadow-sm border border-black-100">
-                <h2 className="text-blue-600 text-3xl font-bold mb-8 tracking-tight">
-                  Clause Preview
-                </h2>
-                <div
-                  className="text-blue-600 leading-relaxed"
-                  dangerouslySetInnerHTML={{
-                    __html: useMemo(() => getClauseForQuestion(question.value, questionClauseMap, userAnswers) || "", [question.value, questionClauseMap, userAnswers]),
-                  }}
-                />
+              <h2 className="text-2xl font-bold mb-4">Questions</h2>
+              {highlightedTexts.map((text, index) => {
+                const { primaryValue } = determineQuestionType(text);
+                if (!skippedQuestions.includes(primaryValue || "")) {
+                  return (
+                    <div key={index} className="flex mb-6">
+                      <div className="w-1/2 pr-4">
+                        <p className="text-lg">{primaryValue || "Unnamed Question"}</p>
+                        {renderAnswerInput(index)}
+                      </div>
+                      <div className="w-1/2 pl-4 bg-white rounded-lg shadow-sm border border-black-100">
+                        <h3 className="text-blue-600 text-xl font-semibold mb-2 py-2">Clause Preview</h3>
+                        <div
+                          className="text-blue-600 leading-relaxed py-4"
+                          dangerouslySetInnerHTML={{
+                            __html: getClauseForQuestion(primaryValue || "", index),
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })}
+              <div className="flex justify-end mt-6">
+                <button
+                  className="px-6 py-3 bg-blue-600 text-white rounded-md hover:scale-110 transition-all duration-300"
+                  onClick={handleFinish}
+                >
+                  Finish
+                </button>
               </div>
             </>
           ) : (
@@ -402,24 +436,6 @@ const Live_Generation = () => {
           )}
         </div>
       </div>
-      {highlightedTexts.length > 0 && (
-        <div className="flex justify-between px-8 py-4">
-          <button
-            className="px-6 py-3 bg-blue-600 text-white rounded-md hover:scale-110 transition-all duration-300"
-            onClick={handlePreviousQuestion}
-            disabled={currentQuestionIndex === 0}
-          >
-            Previous
-          </button>
-          <button
-            className="px-6 py-3 bg-blue-600 text-white rounded-md hover:scale-110 transition-all duration-300"
-            onClick={handleNextQuestion}
-            disabled={currentQuestionIndex === highlightedTexts.length - 1}
-          >
-            Next
-          </button>
-        </div>
-      )}
     </div>
   );
 };
@@ -427,5 +443,4 @@ const Live_Generation = () => {
 export default Live_Generation;
 
 
-
-// original
+// original 3
