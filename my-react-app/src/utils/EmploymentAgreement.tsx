@@ -23,23 +23,12 @@ export const documentText = `
               <h2 className="text-2xl font-bold mt-6">COMMENCEMENT OF EMPLOYMENT</h2>
               <p>
                   The Employee’s employment with the Company shall commence on
-                  [Employment Start Date]. The Employee's period of continuous
-                  employment will begin on this date [or, if applicable, "on [Previous Employment Start Date] with previous continuous service taken into account"].
+                  [Employment Start Date]. The Employee's period of continuous employment will begin on this date. 
+                  [or, if applicable, "on [Previous Employment Start Date] with previous continuous service taken into account"].
               </p>
           </div>
           <div> <!-- Wrapper for each clause section -->
-              <h2 className="text-2xl font-bold mt-6">PROBATIONARY PERIOD</h2>
-              <p>
-                  [The first [Probation Period Length] of employment will be a
-                  probationary period. The Company shall assess the Employee’s
-                  performance and suitability during this time. The Company may
-                  extend the probationary period by up to 
-                  [Probation Extension Length] if further assessment is required. 
-                  During the probationary period, either party may terminate the employment by providing
-                  [one week's] written notice. Upon successful completion, the
-                  Employee will be confirmed in their role.]{" "}
-                  <span className="text-black font-bold">OPTIONAL</span>
-              </p>
+              <h2 className="text-2xl font-bold mt-6">PROBATIONARY PERIOD</h2><p>[The first [Probation Period Length] of employment will be a probationary period. The Company shall assess the Employee’s performance and suitability during this time. The Company may extend the probationary period by up to [Probation Extension Length] if further assessment is required. During the probationary period, either party may terminate the employment by providing [one week's] written notice. Upon successful completion, the Employee will be confirmed in their role.]{" "}<span className="text-black font-bold">OPTIONAL</span></p>
           </div>
           <div> <!-- Wrapper for each clause section -->
               <h2 className="text-2xl font-bold mt-6">JOB TITLE AND DUTIES</h2>
@@ -74,8 +63,8 @@ export const documentText = `
               <h2 className="text-2xl font-bold mt-6">REMUNERATION</h2>
               <p>
                   The Employee shall receive a salary of £[Annual Salary] per
-                  [Payment Frequency], payable in arrears on or before [Payment
-                  Date] by direct bank transfer. The Company reserves the right to
+                  [Payment Frequency], payable in arrears on or before [Payment Date] 
+                  by direct bank transfer. The Company reserves the right to
                   deduct from the Employee’s salary any sums owed to the Company,
                   including but not limited to, overpaid salary, outstanding loans,
                   or loss/damage of Company property.
@@ -96,7 +85,8 @@ export const documentText = `
               <p>
                   If the Employee is unable to work due to illness, they must notify
                   the Company as soon as possible. Statutory Sick Pay (SSP) will be
-                  paid in accordance with government regulations. [The Employee may also be entitled to Company sick pay of [Details of Company Sick Pay Policy].]
+                  paid in accordance with government regulations. 
+                  [The Employee may also be entitled to Company sick pay of [Details of Company Sick Pay Policy].]
               </p>
           </div>
           <div> <!-- Wrapper for each clause section -->
@@ -188,7 +178,7 @@ const EmploymentAgreement: React.FC = () => {
 
         <h2 className="text-2xl font-bold mt-6">COMMENCEMENT OF EMPLOYMENT</h2>
         <p>
-          The Employee’s employment with the Company shall commence on [Employment Start Date]. The Employee's period of continuous employment will begin on this date [or, if applicable, "on [Previous Employment Start Date] with previous continuous service taken into account"].
+          The Employee’s employment with the Company shall commence on [Employment Start Date]. The Employee's period of continuous employment will begin on this date. [or, if applicable, "on [Previous Employment Start Date] with previous continuous service taken into account"].
         </p>
 
         <h2 className="text-2xl font-bold mt-6">PROBATIONARY PERIOD</h2>

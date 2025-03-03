@@ -2,29 +2,36 @@ import { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import { useNavigate, useLocation } from "react-router";
 import Confetti from "react-confetti";
-import parse, { DOMNode, HTMLReactParserOptions } from "html-react-parser"; // Import specific types
-import { documentText } from "../utils/EmploymentAgreement";
-import { textTypes, numberTypes, radioTypes } from "../utils/questionTypeUtils";
+import parse from "html-react-parser"; // Import html-react-parser for rendering HTML
 
-// Define the type for userAnswers to resolve the 'unknown' issue
+import { documentText } from "../utils/EmploymentAgreement";
+import { textTypes, numberTypes, radioTypes, findPlaceholderByValue } from "../utils/questionTypeUtils";
+
+// Define the type for userAnswers
 interface UserAnswers {
   [key: string]: string | boolean;
 }
 
-// Custom function to process HTML and add spacing
+// Custom function to process HTML and replace placeholders with answers
 const processAgreement = (html: string, answers: UserAnswers) => {
   let updatedHtml = html;
 
   // Replace placeholders with answers
   Object.entries(answers).forEach(([question, answer]) => {
-    const placeholder = Object.keys(textTypes).find(key => textTypes[key] === question) ||
-                      Object.keys(numberTypes).find(key => numberTypes[key] === question) ||
-                      Object.keys(radioTypes).find(key => radioTypes[key] === question) || "";
+    const placeholder =
+      Object.keys(textTypes).find((key) => textTypes[key] === question) ||
+      Object.keys(numberTypes).find((key) => numberTypes[key] === question) ||
+      Object.keys(radioTypes).find((key) => radioTypes[key] === question) ||
+      "";
+
     if (placeholder) {
       const probationQuestion = "Is the clause of probationary period applicable?";
       const terminationQuestion = "Is the termination clause applicable?";
       const sickPayQuestion = "Is the sick pay policy applicable?";
       const prevEmploymentQuestion = "Is the previous service applicable?";
+      const overtimeNoQuestion = "Should the employee not receive overtime payment?";
+      const overtimeYesQuestion = "Does the employee receive overtime payment?";
+
       if (question === probationQuestion && answer === false) {
         const probationClauseStart = updatedHtml.indexOf('<h2 className="text-2xl font-bold mt-6">PROBATIONARY PERIOD</h2>');
         const probationClauseEnd = updatedHtml.indexOf('<h2 className="text-2xl font-bold mt-6">JOB TITLE AND DUTIES</h2>');
@@ -37,14 +44,19 @@ const processAgreement = (html: string, answers: UserAnswers) => {
         if (terminationClauseStart !== -1 && terminationClauseEnd !== -1) {
           updatedHtml = updatedHtml.slice(0, terminationClauseStart) + updatedHtml.slice(terminationClauseEnd);
         }
-      }  
-      else if (question === sickPayQuestion && answer === false) {
+      } else if (question === sickPayQuestion && answer === false) {
         const sickPaySectionStart = updatedHtml.indexOf('<h2 className="text-2xl font-bold mt-6">SICKNESS ABSENCE</h2>');
         if (sickPaySectionStart !== -1) {
-          // Remove text inside square brackets only within this section
-          updatedHtml = updatedHtml.replace(/\[.*?\]/g, ""); 
+          updatedHtml = updatedHtml.replace(/\[.*?\]/g, ""); // Remove text inside square brackets
         }
-      }
+      } else if ((question === prevEmploymentQuestion || 
+                  question === overtimeNoQuestion || 
+                  question === overtimeYesQuestion) && answer === false) {
+        const placeholder = findPlaceholderByValue(question);
+        if (!placeholder) return;
+        const escapedPlaceholder = placeholder.replace(/[.*+?^=!:${}()|\[\]\/\\]/g, "\\$&");
+        updatedHtml = updatedHtml.replace(new RegExp(`.*${escapedPlaceholder}.*`, "gi"), "");
+      } 
       else {
         const answerValue = typeof answer === "boolean" ? answer.toString() : answer;
         updatedHtml = updatedHtml.replace(
@@ -55,44 +67,7 @@ const processAgreement = (html: string, answers: UserAnswers) => {
     }
   });
 
-  // Parse HTML and add spacing between clauses
-  const options: HTMLReactParserOptions = {
-    replace: (domNode: DOMNode) => {
-      if (domNode.type === 'tag' && domNode.name === 'h2' && domNode.attribs?.class?.includes('text-2xl font-bold mt-6')) {
-        // Collect content after h2 (e.g., next <p> or text)
-        let content = `<h2 ${domNode.attribs ? Object.entries(domNode.attribs).map(([k, v]) => `${k}="${v}"`).join(' ') : ''}>`;
-        if (domNode.children && domNode.children.length > 0) {
-          content += domNode.children.map(child => {
-            if (child.type === 'text') {
-              return child.data || '';
-            } else if (child.type === 'tag') {
-              // Handle nested tags (e.g., <span>)
-              return `<${child.name} ${child.attribs ? Object.entries(child.attribs).map(([k, v]) => `${k}="${v}"`).join(' ') : ''}>${
-                child.children ? child.children.map(c => {
-                  if (c.type === 'text') return c.data || '';
-                  return ''; // Ignore non-text children for simplicity
-                }).join('') : ''
-              }</${child.name}>`;
-            }
-            return '';
-          }).join('');
-        }
-        content += '</h2>';
-
-        // Get the next sibling (e.g., <p> tag)
-        const nextSibling = domNode.next;
-        if (nextSibling && nextSibling.type === 'tag' && nextSibling.name === 'p') {
-          content += nextSibling.children.map(child => child.type === 'text' ? child.data || '' : '').join('');
-        }
-
-        return <div className="mt-6">{parse(content)}</div>;
-      }
-      return domNode;
-    }
-  };
-
-  const parsed = parse(updatedHtml, options);
-  return parsed;
+  return updatedHtml;
 };
 
 const Finish = () => {
@@ -102,7 +77,7 @@ const Finish = () => {
   const [finalAgreement, setFinalAgreement] = useState<React.ReactNode>(null);
   const [windowDimensions, setWindowDimensions] = useState({
     width: window.innerWidth,
-    height: document.body.scrollHeight || window.innerHeight
+    height: document.body.scrollHeight || window.innerHeight,
   });
 
   useEffect(() => {
@@ -110,7 +85,7 @@ const Finish = () => {
     const updateDimensions = () => {
       setWindowDimensions({
         width: window.innerWidth,
-        height: Math.max(document.body.scrollHeight, window.innerHeight)
+        height: Math.max(document.body.scrollHeight, window.innerHeight),
       });
     };
 
@@ -118,28 +93,28 @@ const Finish = () => {
     updateDimensions();
 
     // Add event listener for resize
-    window.addEventListener('resize', updateDimensions);
+    window.addEventListener("resize", updateDimensions);
 
     // Set confetti to true and process agreement
     setConfetti(true);
     const answers: UserAnswers = location.state?.userAnswers || {};
-    const processedAgreement = processAgreement(documentText, answers);
-    setFinalAgreement(processedAgreement);
+    let updatedText = processAgreement(documentText, answers);
+    setFinalAgreement(parse(updatedText)); // Use parse to safely render the HTML content
 
     // Update dimensions again after content loads
     setTimeout(updateDimensions, 100);
 
     // Clean up event listener
-    return () => window.removeEventListener('resize', updateDimensions);
+    return () => window.removeEventListener("resize", updateDimensions);
   }, [location.state]);
 
   const handleBackClick = () => {
-    // Navigate back to the previous page or default to Document tab
+    // Navigate back to the previous page
     navigation(-1); // Go back in history
   };
 
   const handleHomeClick = () => {
-    navigation("/");
+    navigation("/"); // Navigate to home page
   };
 
   return (
@@ -184,7 +159,3 @@ const Finish = () => {
 };
 
 export default Finish;
-
-
-
-// original 2

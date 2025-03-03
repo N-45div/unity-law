@@ -42,7 +42,7 @@ export const radioTypes: { [key: string]: string } = {
   // "Overtime Pay Rate": "Is the overtime payment applicable?",
   "The Employee may also be entitled to Company sick pay of [Details of Company Sick Pay Policy].": "Is the sick pay policy applicable?",
   // "Details of Company Sick Pay Policy": "Is the sick pay policy applicable?",
-  // "The Employee shall not receive additional payment for overtime worked": "Does the employee receive overtime payment?",
+  "The Employee shall not receive additional payment for overtime worked": "Should the employee not receive overtime payment?",
   "After the probationary period, either party may terminate the employment by providing [Notice Period] written notice. The Company reserves the right to make a payment in lieu of notice. The Company may summarily dismiss the Employee without notice in cases of gross misconduct.": "Is the termination clause applicable?",
   "The Employee is entitled to overtime pay at a rate of [Overtime Pay Rate] for authorized overtime work": "Does the employee receive overtime payment?",
 };
@@ -98,6 +98,17 @@ export const validateQuestionRelevance = (placeholder: string, question: string)
   }
 
   return true; // Fallback for unknown placeholders
+};
+
+export const findKeyByValue = (obj: { [key: string]: string }, value: string): string | undefined => {
+  return Object.keys(obj).find(key => obj[key] === value);
+};
+export const findPlaceholderByValue = (value: string): string | undefined => {
+  return (
+    findKeyByValue(textTypes, value) ||
+    findKeyByValue(numberTypes, value) ||
+    findKeyByValue(radioTypes, value)
+  );
 };
 
 export const determineQuestionType = (text: string): { 

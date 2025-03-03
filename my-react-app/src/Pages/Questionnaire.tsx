@@ -126,9 +126,17 @@ const DivWithDropdown: React.FC<DivWithDropdownProps> = ({
             </button>
             <div className="relative w-200 h-40 bg-lime-300 rounded-lg shadow-md flex flex-col items-center justify-center text-black text-lg font-semibold p-4 z-10">
                 <div className="relative w-full flex items-center">
-                    <label className="px-2 py-1 text-sm bg-transparent w-full text-left">
+                <div className="h-0.5 w-2/5 bg-black absolute left-0"></div>
+                    <input
+                        type="text"
+                        value={questionText}
+                        onChange={handleQuestionTextChange}
+                        className="px-2 py-1 text-sm bg-transparent w-2/5 relative z-10 top-[-14px] max-w-full overflow-hidden border-b border-gray-500 focus:outline-none focus:border-blue-600"
+                        placeholder="Edit question text"
+                    />
+                    {/* <label className="px-2 py-1 text-sm bg-transparent w-full text-left">
                         {questionText || "Edit question text"}
-                    </label>
+                    </label> */}
                 </div>
 
 

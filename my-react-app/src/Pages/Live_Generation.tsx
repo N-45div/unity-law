@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useMemo, useRef, use } from "react";
 import Navbar from "../components/Navbar";
-import { determineQuestionType, textTypes, numberTypes, radioTypes, QuestionType } from "../utils/questionTypeUtils";
+import { determineQuestionType, findPlaceholderByValue, textTypes, numberTypes, radioTypes, QuestionType } from "../utils/questionTypeUtils";
 import { documentText } from "../utils/EmploymentAgreement";
 import { useHighlightedText } from "../context/HighlightedTextContext";
 import { useQuestionType } from "../context/QuestionTypeContext";
@@ -125,6 +125,7 @@ const Live_Generation = () => {
   const [userAnswers, setUserAnswers] = useState<{ [key: string]: string | boolean }>(initializeUserAnswers(highlightedTexts, selectedTypes));
   const [skippedQuestions, setSkippedQuestions] = useState<string[]>([]);
   const [highlightedPlaceholder, setHighlightedPlaceholder] = useState<{ [key: string]: boolean }>({}); // Track highlighted placeholders per question
+  const [agreement, setAgreement] = useState<string>(documentText);
   const previewRefs = useRef<(HTMLDivElement | null)[]>([]); // Reintroduced
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]); // Reintroduced
 
@@ -273,6 +274,31 @@ const Live_Generation = () => {
       userAnswers["Is the sick pay policy applicable?"],
       userAnswers["Is the previous service applicable?"],
       userAnswers["Does the employee receive overtime payment?"]]);
+
+  useEffect(() => {
+    let updatedText = documentText;
+    Object.entries(userAnswers).forEach(([question, answer]) => {
+      const placeholder = findPlaceholderByValue(question); // Get the correct placeholder
+
+      if (!placeholder) return;
+      const escapedPlaceholder = placeholder.replace(/[.*+?^=!:${}()|\[\]\/\\]/g, "\\$&");
+      console.log("Processing answer:", { placeholder, question, answer });
+      if (typeof answer === "boolean") {
+        // Handle sections that should be visible/invisible based on boolean values
+        if (!answer) {
+          updatedText = updatedText.replace(new RegExp(`.*${escapedPlaceholder}.*`, "gi"), "");
+        }
+      } else {
+        // Replace placeholders dynamically
+        updatedText = updatedText.replace(
+          new RegExp(`\\[${placeholder.replace(/\s+/g, " ")}\\]`, "gi"),
+          answer ? `<span class="bg-lime-300">${answer}</span>` : `[${placeholder}]`
+        );
+      }
+    });
+  
+    setAgreement(updatedText);
+  }, [userAnswers]);
 
   const handleAnswerChange = (index: number, value: string | boolean) => {
     const { primaryValue } = determineQuestionType(highlightedTexts[index] || "");
@@ -480,54 +506,56 @@ const Live_Generation = () => {
     <div className="min-h-screen flex flex-col bg-gradient-to-r from-green-100 via-purple-100 to-blue-100 relative">
       <Navbar />
       <div className="flex-grow flex items-center justify-center">
-        <div className="flex flex-col w-full p-8">
-          {highlightedTexts.length > 0 ? (
-            <>
-              <h2 className="text-2xl font-bold mb-4">Questions</h2>
-              {highlightedTexts.map((text, index) => {
-                const { primaryValue } = determineQuestionType(text);
-                if (!skippedQuestions.includes(primaryValue || "")) {
-                  return (
-                    <div key={index} className="flex mb-6">
-                      <div className="w-1/2 pr-4">
-                        <p className="text-lg">{primaryValue || "Unnamed Question"}</p>
-                        {renderAnswerInput(index)}
+        <div className="flex flex-row w-full p-8">
+          {/* Left section for questions */}
+          <div className="flex flex-col w-1/2 pl-1 pr-8 sticky top-0 max-h-screen overflow-y-auto">
+            {highlightedTexts.length > 0 ? (
+              <>
+                <h2 className="text-2xl font-bold mb-4">Questions</h2>
+                {highlightedTexts.map((text, index) => {
+                  const { primaryValue } = determineQuestionType(text);
+                  if (!skippedQuestions.includes(primaryValue || "")) {
+                    return (
+                      <div key={index} className="flex mb-6">
+                        <div className="w-full pr-4">
+                          <p className="text-lg">{primaryValue || "Unnamed Question"}</p>
+                          {renderAnswerInput(index)}
+                        </div>
                       </div>
-                      <div className="w-1/2 pl-4 bg-white rounded-lg shadow-sm border border-black-100">
-                        <h3 className="text-blue-600 text-xl font-semibold mb-2 py-2">Clause Preview</h3>
-                        <div
-                          className="text-blue-600 leading-relaxed py-4"
-                          dangerouslySetInnerHTML={{
-                            __html: getClauseForQuestion(primaryValue || "", index),
-                          }}
-                        />
-                      </div>
-                    </div>
-                  );
-                }
-                return null;
-              })}
-              <div className="flex justify-end mt-6">
-                <button
-                  className="px-6 py-3 bg-blue-600 text-white rounded-md hover:scale-110 transition-all duration-300"
-                  onClick={handleFinish}
-                >
-                  Finish
-                </button>
+                    );
+                  }
+                  return null;
+                })}
+                <div className="flex justify-end mt-6">
+                  <button
+                    className="px-6 py-3 bg-blue-600 text-white rounded-md hover:scale-110 transition-all duration-300"
+                    onClick={handleFinish}
+                  >
+                    Finish
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-10 w-full">
+                <p className="text-gray-600">No questions have been generated yet.</p>
+                <p className="text-gray-500 text-sm mt-2">
+                  Please go to the Questionnaire tab, create or select questions from the Document tab, and then return here to answer them and generate a live document preview.
+                </p>
               </div>
-            </>
-          ) : (
-            <div className="text-center py-10 w-full">
-              <p className="text-gray-600">No questions have been generated yet.</p>
-              <p className="text-gray-500 text-sm mt-2">
-                Please go to the Questionnaire tab, create or select questions from the Document tab, and then return here to answer them and generate a live document preview.
-              </p>
+            )}
+          </div>
+  
+          {/* Right section for the agreement preview */}
+          <div className="w-1/2 pl-8 bg-white rounded-lg shadow-sm border border-black-100">
+            <div className="mt-4 p-4 rounded-md bg-white text-gray-700">
+              <div dangerouslySetInnerHTML={{ __html: agreement }} />
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
   );
+  
 };
 
 export default Live_Generation;

@@ -27,18 +27,22 @@ const LevelTwoPart_Two = () => {
     const overtimeClause1 = "[The Employee is entitled to overtime pay at a rate of [Overtime Pay Rate] for authorized overtime work]";
     const overtimeClause2 = "[The Employee shall not receive additional payment for overtime worked]";
 
-    if (selectedText === overtimeClause1 || selectedText === overtimeClause2) {
-      if (selectedOvertimeClause && selectedOvertimeClause !== selectedText) {
-        return;
-      }
-      else {
-        setSelectedOvertimeClause(selectedText);
-      }
-    }
+    // optionally, only allow user to select one of the overtime conditions
+    // if (selectedText === overtimeClause1 || selectedText === overtimeClause2) {
+    //   if (selectedOvertimeClause && selectedOvertimeClause !== selectedText) {
+    //     return;
+    //   }
+    //   else {
+    //     setSelectedOvertimeClause(selectedText);
+    //   }
+    // }
 
     if (selectedText.startsWith("[") && selectedText.endsWith("]")) {
       const textWithoutBrackets = selectedText.slice(1, -1);
-
+      if (highlightedTexts.includes(textWithoutBrackets)) {
+        alert("This placeholder has already been selected.");
+        return;
+      }
       if (label === "Edit PlaceHolder") {
         if (selectedText.length >= 40) return;
         addHighlightedText(textWithoutBrackets);
@@ -56,18 +60,18 @@ const LevelTwoPart_Two = () => {
         span.textContent = selectedText;
         range.deleteContents();
         range.insertNode(span);
-        const sickPay = "[The Employee may also be entitled to Company sick pay of [Details of Company Sick Pay Policy].]";
-        const prevEmployment = '[or, if applicable, "on [Previous Employment Start Date] with previous continuous service taken into account"]';
-        const overtime = "[The Employee is entitled to overtime pay at a rate of [Overtime Pay Rate] for authorized overtime work]";
-        if (selectedText === sickPay) {
-          addHighlightedText("Details of Company Sick Pay Policy");
-        }
-        if (selectedText === prevEmployment) {
-          addHighlightedText("Previous Employment Start Date");
-        }
-        if (selectedText === overtime) {
-          addHighlightedText("Overtime Pay Rate");
-        }
+        // const sickPay = "[The Employee may also be entitled to Company sick pay of [Details of Company Sick Pay Policy].]";
+        // const prevEmployment = '[or, if applicable, "on [Previous Employment Start Date] with previous continuous service taken into account"]';
+        // const overtime = "[The Employee is entitled to overtime pay at a rate of [Overtime Pay Rate] for authorized overtime work]";
+        // if (selectedText === sickPay) {
+        //   addHighlightedText("Details of Company Sick Pay Policy");
+        // }
+        // if (selectedText === prevEmployment) {
+        //   addHighlightedText("Previous Employment Start Date");
+        // }
+        // if (selectedText === overtime) {
+        //   addHighlightedText("Overtime Pay Rate");
+        // }
       } else if (label === "Big Condition") {
         if (selectedText.length < 250) return;
         addHighlightedText(textWithoutBrackets);
@@ -78,17 +82,17 @@ const LevelTwoPart_Two = () => {
         range.insertNode(span);
 
         // Specific handling for probationary period clause
-        const probationClause = "[The first [Probation Period Length] of employment will be a probationary period. The Company shall assess the Employee’s performance and suitability during this time. The Company may extend the probationary period by up to [Probation Extension Length] if further assessment is required. During the probationary period, either party may terminate the employment by providing [one week's] written notice. Upon successful completion, the Employee will be confirmed in their role.]";
-        const fullTerminatonClause = "[After the probationary period, either party may terminate the employment by providing [Notice Period] written notice. The Company reserves the right to make a payment in lieu of notice. The Company may summarily dismiss the Employee without notice in cases of gross misconduct.]";
-        if (selectedText === probationClause) {
-          // Ensure the question is set to radio type for this specific clause
-          addHighlightedText("Probation Period Length"); // Use a key to associate with the clause
-          addHighlightedText("Probation Extension Length");
-          addHighlightedText("one week's")
-        }
-        if (selectedText === fullTerminatonClause) {
-          addHighlightedText("Notice Period");
-        }
+        // const probationClause = "[The first [Probation Period Length] of employment will be a probationary period. The Company shall assess the Employee’s performance and suitability during this time. The Company may extend the probationary period by up to [Probation Extension Length] if further assessment is required. During the probationary period, either party may terminate the employment by providing [one week's] written notice. Upon successful completion, the Employee will be confirmed in their role.]";
+        // const fullTerminatonClause = "[After the probationary period, either party may terminate the employment by providing [Notice Period] written notice. The Company reserves the right to make a payment in lieu of notice. The Company may summarily dismiss the Employee without notice in cases of gross misconduct.]";
+        // if (selectedText === probationClause) {
+        //   // Ensure the question is set to radio type for this specific clause
+        //   addHighlightedText("Probation Period Length"); // Use a key to associate with the clause
+        //   addHighlightedText("Probation Extension Length");
+        //   addHighlightedText("one week's")
+        // }
+        // if (selectedText === fullTerminatonClause) {
+        //   addHighlightedText("Notice Period");
+        // }
       } else if (label === "Loop") {
         addHighlightedText(textWithoutBrackets);
         const span = document.createElement("span");
