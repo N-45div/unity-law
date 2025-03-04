@@ -107,7 +107,7 @@ const LevelTwoPart_Two = () => {
   return (
     <div className="w-full min-h-screen bg-gradient-to-r from-green-100 via-purple-100 to-blue-100">
       <Navbar />
-      <div className="flex justify-end px-250 py-3 space-x-6 fixed top-12 z-50">
+      <div className="flex justify-end px-250 left-[25vw] py-3 space-x-6 fixed top-12 z-50">
         {icons.map(({ icon, label }, index) => (
           <div key={index} className="relative flex items-center">
             <button
@@ -126,14 +126,33 @@ const LevelTwoPart_Two = () => {
           </div>
         ))}
       </div>
-      <div className="max-w-4xl mx-auto mt-18 p-4 bg-white shadow-md rounded-md">
-        <h2 className="text-lg font-semibold mb-2">Placeholders and Conditions Selected</h2>
-        <ul className="list-disc pl-5">
-          {highlightedTexts.map((text, index) => (
-            <li key={index} className="text-gray-700">{text}</li>
-          ))}
-        </ul>
-      </div>
+      <div className="max-w-4xl mx-auto mt-18 p-6 bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl border border-purple-100/50">
+  <h2 className="text-xl font-bold text-purple-800 mb-4"> ☑️ Selected Placeholders</h2>
+  {highlightedTexts.length > 0 ? (
+    <ul className="space-y-2 bg-purple-50/50 p-4 rounded-lg">
+      {highlightedTexts.map((text, index) => (
+        <li 
+          key={index} 
+          className="flex items-center text-purple-700 bg-white/70 p-3 rounded-md shadow-sm hover:bg-purple-100/50 transition-colors duration-200"
+        >
+          <span className="text-green-500 mr-3">✓</span>
+          <span className="text-sm font-medium truncate">{text}</span>
+        </li>
+      ))}
+    </ul>
+  ) : (
+    <div className="text-center py-6 bg-purple-50/50 rounded-lg">
+      <p className="text-purple-500 italic">No placeholders selected yet</p>
+    </div>
+  )}
+  {highlightedTexts.length > 0 && (
+    <div className="mt-4 text-right">
+      <span className="text-sm text-purple-500">
+        Total Placeholders: {highlightedTexts.length}
+      </span>
+    </div>
+  )}
+</div>
 
       <div className="max-w-4xl mx-auto mt-15 px-8 pb-16">
         <EmploymentAgreement />
