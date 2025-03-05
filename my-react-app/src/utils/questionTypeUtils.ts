@@ -146,7 +146,7 @@ export const determineQuestionType = (text: string): {
   if (textTypes.hasOwnProperty(text)) {
     primaryType = "Text";
     primaryValue = textTypes[text];
-    validTypes.push("Text"); // Enforce Text type for all text placeholders
+    validTypes = ["Text"]; // Enforce Text type for all text placeholders
   }
 
   // Number types (restrict to Number only)

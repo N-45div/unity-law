@@ -146,12 +146,15 @@ const Live_Generation = () => {
   const getUpdatedClause = (clause: string, placeholder: string, answer: string | boolean): string => {
     if (!clause) return ""; // Return empty string if clause is undefined
     const fullProbationClause = "The first [Probation Period Length] of employment will be a probationary period. The Company shall assess the Employee’s performance and suitability during this time. The Company may extend the probationary period by up to [Probation Extension Length] if further assessment is required. During the probationary period, either party may terminate the employment by providing [one week's] written notice. Upon successful completion, the Employee will be confirmed in their role.";
-    const probationQuestion = "Is the clause of probationary period applicable?";
+    // const probationQuestion = "Is the clause of probationary period applicable?";
     const fullTerminationClause = "After the probationary period, either party may terminate the employment by providing [Notice Period] written notice. The Company reserves the right to make a payment in lieu of notice. The Company may summarily dismiss the Employee without notice in cases of gross misconduct.";
     const terminationQuestion = "Is the termination clause applicable?";
     const sickPay = "The Employee may also be entitled to Company sick pay of [Details of Company Sick Pay Policy].";
     const sickPayQuestion = "Is the sick pay policy applicable?";
 
+    const smallConditionClause = "The Employee may also be entitled to Company sick pay";
+    const probationQuestion = "Is the clause of probationary period applicable?";
+    const smallConditionQuestion = "Prachi - Is the clause of Company sick pay applicable?";
 
     if (clause.includes(fullProbationClause)) {
       const isApplicable = userAnswers[probationQuestion] as boolean || false;
@@ -166,53 +169,20 @@ const Live_Generation = () => {
       }
     }
 
-    if (clause.includes(fullTerminationClause)) {
-      const isApplicable = userAnswers[terminationQuestion] as boolean || false;
-      if (placeholder === "" || placeholder === terminationQuestion) {
-        return isApplicable ? `<div className="p-4 text-blue-600" style="opacity: 1;">${clause}</div>` : `<div className="p-4 text-blue-600" style="opacity: 0.2;">${clause}</div>`;
-      }
-      if (placeholder === "Notice Period") {
-        return isApplicable ? clause.replace(
-          new RegExp(`\\[${placeholder.replace(/\s+/g, " ").trim()}\\]`, "gi"),
-          answer ? `<span class="${highlightedPlaceholder[placeholder] ? 'bg-lime-300' : ''}">${answer.toString().trim()}</span>` : `[${placeholder}]`
-        ) : `<div className="p-4 text-blue-600" style="opacity: 0.2;">${clause}</div>`;
-      }
+    // Check if the clause is the small condition clause
+    if (clause.includes(smallConditionClause)) {
+      const isApplicable = userAnswers[smallConditionQuestion] as boolean || false;
+      return isApplicable ? `<div className="p-4 text-blue-600" style="opacity: 1;">${clause}</div>` : `<div className="p-4 text-blue-600" style="opacity: 0.2;">${clause}</div>`;
     }
-    // if (clause.includes(sickPay)) {
-    //   const isApplicable = userAnswers[sickPayQuestion] as boolean || false;
-    //   if (placeholder === "" || placeholder === sickPayQuestion) {
-    //     return isApplicable ? `<div className="p-4 text-blue-600" style="opacity: 1;">${clause}</div>` : clause.replace(
-    //       new RegExp(`\\[${placeholder.replace(/\s+/g, " ").trim()}\\]`, "gi"),
-    //       isApplicable 
-    //         ? `[${placeholder}]` 
-    //         : `<span class="text-blue-600" style="opacity: 0.2;">[${placeholder}]</span>`
-    //     );;
-    //   }
-    //   if (placeholder === "Details of Company Sick Pay Policy") {
-    //     return isApplicable ? clause.replace(
-    //       new RegExp(`\\[${placeholder.replace(/\s+/g, " ").trim()}\\]`, "gi"),
-    //       answer ? `<span class="${highlightedPlaceholder[placeholder] ? 'bg-lime-300' : ''}">${answer.toString().trim()}</span>` : `[${placeholder}]`
-    //     ) : `<div className="p-4 text-blue-600" style="opacity: 0.2;">${clause}</div>`;
-    //   }
-    // }
 
+    // Handle all other clauses (non-probationary) normally
     if (typeof answer === "boolean") {
       return answer ? (clause || "") : "";
     }
-    // console.log("getUpdatedClause Debug:", { clause, placeholder, answer });
-
-    // return `<div className="p-4 text-blue-600">${clause.replace(
-    //   new RegExp(`\\[${placeholder.replace(/\s+/g, " ").trim()}\\]`, "gi"),
-    //   answer ? `<span class="${highlightedPlaceholder[placeholder] ? 'bg-lime-300' : ''}">${answer}</span>` : `[${placeholder}]`
-    // )}</div>`;
-    return `<div className="p-4 text-blue-600">${
-      clause.replace(/\s+/g, " ").includes(placeholder)
-          ? clause.replace(
-              new RegExp(`\\[\\s*${placeholder.replace(/\s+/g, " ")}\\s*\\]`, "gi"), 
-              answer ? `<span class="${highlightedPlaceholder[placeholder] ? 'bg-lime-300' : ''}">${answer}</span>` : `[${placeholder}]`
-            )
-          : clause
-    }</div>`;
+    return `<div className="p-4 text-blue-600">${clause.replace(
+      new RegExp(`\\[${placeholder.replace(/\s+/g, " ").trim()}\\]`, "gi"),
+      answer ? `<span class="${highlightedPlaceholder[placeholder] ? 'bg-lime-300' : ''}">${answer}</span>` : `[${placeholder}]`
+    )}</div>`;
   };
 
   // Helper function to format date answers
@@ -338,34 +308,6 @@ const Live_Generation = () => {
     const isOvertimeApplicable = primaryValue === userAnswers["Does the employee receive overtime payment?"] === true;
 
     if (isProbationFollowUp && !isProbationApplicable) {
-      return (
-        <div className="mt-4 p-2 w-full border border-gray-300 rounded-md text-gray-500 bg-gray-100">
-          This clause will not be populated in the Final Agreement since it has been selected as 'No'
-        </div>
-      );
-    }
-    if (isTerminationFollowUp&& isTerminationApplicable) {
-      return (
-        <div className="mt-4 p-2 w-full border border-gray-300 rounded-md text-gray-500 bg-gray-100">
-          This clause will not be populated in the Final Agreement since it has been selected as 'No'
-        </div>
-      );
-    }
-    if (isSickPayFollowUp && isSickPayApplicable) {
-      return (
-        <div className="mt-4 p-2 w-full border border-gray-300 rounded-md text-gray-500 bg-gray-100">
-          This clause will not be populated in the Final Agreement since it has been selected as 'No'
-        </div>
-      );
-    }
-    if (isPrevFollowUp && isPrevApplicable) {
-      return (
-        <div className="mt-4 p-2 w-full border border-gray-300 rounded-md text-gray-500 bg-gray-100">
-          This clause will not be populated in the Final Agreement since it has been selected as 'No'
-        </div>
-      );
-    }
-    if (isOvertimeFollowUp && isOvertimeApplicable) {
       return (
         <div className="mt-4 p-2 w-full border border-gray-300 rounded-md text-gray-500 bg-gray-100">
           This clause will not be populated in the Final Agreement since it has been selected as 'No'

@@ -1,32 +1,25 @@
-import React from "react";
+import { MatchLineProps } from '../types';
 
-interface MatchLineProps {
-  matches: { jargonId: number; definitionId: number; isCorrect: boolean }[];
-  positions: { [key: number]: { x: number; y: number } };
-}
+const MatchLine = ({ startX, startY, endX, endY, color }: MatchLineProps) => {
+  const midX = (startX + endX) / 2;
+  const curveFactor = 0.3;
+  const curveOffset = Math.abs(endY - startY) * curveFactor;
 
-const MatchLine: React.FC<MatchLineProps> = ({ matches, positions }) => {
   return (
-    <svg className="absolute w-full h-full top-0 left-0 pointer-events-none">
-      {matches.map((match, index) => {
-        const start = positions[match.jargonId];
-        const end = positions[match.definitionId];
-
-        if (!start || !end) return null;
-
-        return (
-          <line
-            key={index}
-            x1={start.x}
-            y1={start.y}
-            x2={end.x}
-            y2={end.y}
-            stroke={match.isCorrect ? "green" : "red"}
-            strokeWidth="4"
-            strokeLinecap="round"
-          />
-        );
-      })}
+    <svg 
+      className="matching-lines-container"
+    >
+      <path
+        d={`M${startX},${startY} C${midX + curveOffset},${startY} ${midX - curveOffset},${endY} ${endX},${endY}`}
+        fill="none"
+        stroke={color}
+        strokeWidth="3"
+        strokeLinecap="round"
+        style={{
+          filter: `drop-shadow(0 2px 4px rgba(0,0,0,0.1))`,
+          animation: 'drawLine 0.6s ease-out forwards'
+        }}
+      />
     </svg>
   );
 };
