@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import { MatchingItem } from '../types';
 import MatchLine from './MatchLine';
 import '../styles/MatchingExercise.css';
@@ -26,6 +27,7 @@ const MatchingExercise = ({ data }: MatchingExerciseProps) => {
 
   const termRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const defRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  const navigate = useNavigate(); // Add navigation hook
 
   const handleTermClick = (item: MatchingItem) => {
     if (item.isMatched) return;
@@ -166,6 +168,16 @@ const MatchingExercise = ({ data }: MatchingExerciseProps) => {
             color={line.color}
           />
         ))}
+      </div>
+
+      {/* Add Home button */}
+      <div className="mt-6 flex justify-center">
+        <button
+          className="px-6 py-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition duration-300"
+          onClick={() => navigate('/')} // Navigate to homepage
+        >
+          Home
+        </button>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 import lawyaltechLogo from "../assets/lawyaltech_logo.png";
 import klaraImg from "../assets/klara.png";
 
@@ -59,6 +60,7 @@ const ContentComponent: React.FC = () => {
   const [count, setCount] = useState<number>(0);
   const [displayText, setDisplayText] = useState<string[]>([]);
   const [paragraphIndex, setParagraphIndex] = useState<number>(0);
+  const navigate = useNavigate(); // Add navigation hook
 
   useEffect(() => {
     setDisplayText([]); // Reset text when step changes
@@ -66,14 +68,13 @@ const ContentComponent: React.FC = () => {
 
     const paragraphs = [...steps[count].content]; // Clone content array
 
-    // If there's a list, add its terms and definitions as separate paragraphs
     if (steps[count].list) {
       steps[count].list.forEach((item) => {
         paragraphs.push(`${item.term}: ${item.definition}`);
       });
     }
 
-    let currentPara = 0; // Track which paragraph is being typed
+    let currentPara = 0;
 
     const typeNextParagraph = () => {
       if (currentPara < paragraphs.length) {
@@ -91,21 +92,21 @@ const ContentComponent: React.FC = () => {
             i++;
           } else {
             clearInterval(interval);
-            currentPara++; // Move to the next paragraph
+            currentPara++;
             if (currentPara < paragraphs.length) {
-              setTimeout(typeNextParagraph, 500); // Delay before typing next paragraph
+              setTimeout(typeNextParagraph, 500);
             }
           }
-        }, 30); // Typing speed
+        }, 30);
 
         return interval;
       }
     };
 
-    const intervalId = typeNextParagraph(); // Start typing effect
+    const intervalId = typeNextParagraph();
 
     return () => {
-      clearInterval(intervalId); // Cleanup when component re-renders
+      clearInterval(intervalId);
     };
   }, [count]);
 
@@ -117,12 +118,10 @@ const ContentComponent: React.FC = () => {
         </h3>
       )}
       <div className="flex flex-row items-center">
-        {/* Render Klara image if available */}
         {steps[count].klara && (
           <img src={steps[count].klara} alt="klara" className="mr-4" />
         )}
         <span>
-          {/* Render each paragraph with typing effect */}
           {displayText.map((paragraph, idx) => (
             <p key={idx} className="font-mono text-lg mb-4">
               {paragraph}
@@ -131,32 +130,26 @@ const ContentComponent: React.FC = () => {
         </span>
       </div>
 
-      {/* Render list if available */}
-      {/* {steps[count].list && (
-        <ul className="list-disc ml-8">
-          {steps[count].list.map((item, idx) => (
-            <li key={idx} className="font-mono text-lg mb-2">
-              <strong>{item.term}:</strong> {item.definition}
-            </li>
-          ))}
-        </ul>
-      )} */}
-
-      {/* Navigation */}
       <div className={`p-20 pb-32 ${steps[count].klara ? "px-10 py-5" : ""}`}>
         <div className="fixed bottom-0 left-0 w-full flex justify-between items-center p-4 bg-white shadow-lg z-10">
-          {/* Render footer image if available */}
           {steps[count].footerImg && (
-            <div className="w-54 h-26 ">
+            <div className="w-54 h-26">
               <img src={steps[count].footerImg} alt="Lawyaltech Logo" />
             </div>
           )}
-          {count < steps.length - 1 && (
+          {count < steps.length - 1 ? (
             <button
-              className="  mt-4 px-6 py-2 rounded-full bg-red-600 text-white hover:bg-red-700 transition duration-300"
+              className="mt-4 px-6 py-2 rounded-full bg-red-600 text-white hover:bg-red-700 transition duration-300"
               onClick={() => setCount(count + 1)}
             >
               Next
+            </button>
+          ) : (
+            <button
+              className="mt-4 px-6 py-2 rounded-full bg-green-600 text-white hover:bg-green-700 transition duration-300"
+              onClick={() => navigate("/Matching-Exercise")} // Navigate to MatchingExercise
+            >
+              Start Matching Exercise
             </button>
           )}
         </div>
