@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
-import { useState, useEffect, useMemo, useRef, use } from "react";
+import { useState, useEffect, useRef } from "react";
 import Navbar from "../components/Navbar";
-import { determineQuestionType, findPlaceholderByValue, textTypes, numberTypes, radioTypes, QuestionType } from "../utils/questionTypeUtils";
+import { determineQuestionType, findPlaceholderByValue, textTypes, numberTypes, radioTypes } from "../utils/questionTypeUtils";
 import { documentText } from "../utils/EmploymentAgreement";
 import { useHighlightedText } from "../context/HighlightedTextContext";
 import { useQuestionType } from "../context/QuestionTypeContext";
@@ -70,7 +70,7 @@ const mapQuestionsToClauses = (
 
     const fullProbationClause = "The first [Probation Period Length] of employment will be a probationary period. The Company shall assess the Employee’s performance and suitability during this time. The Company may extend the probationary period by up to [Probation Extension Length] if further assessment is required. During the probationary period, either party may terminate the employment by providing [one week's] written notice. Upon successful completion, the Employee will be confirmed in their role.";
     const fullTerminatonClause = "After the probationary period, either party may terminate the employment by providing [Notice Period] written notice. The Company reserves the right to make a payment in lieu of notice. The Company may summarily dismiss the Employee without notice in cases of gross misconduct.";
-    const sickPay = "The Employee may also be entitled to Company sick pay of [Details of Company Sick Pay Policy].";
+    // const sickPay = "The Employee may also be entitled to Company sick pay of [Details of Company Sick Pay Policy].";
          
     Object.keys(radioTypes).forEach((key) => {
       const placeholder = `[${key}]`;
@@ -121,12 +121,12 @@ const Live_Generation = () => {
   const navigation = useNavigate();
   const { highlightedTexts } = useHighlightedText();
   const { selectedTypes } = useQuestionType();
-  const [questionClauseMap, setQuestionClauseMap] = useState<{ [key: string]: string[] }>({});
+  const [, setQuestionClauseMap] = useState<{ [key: string]: string[] }>({});
   const [userAnswers, setUserAnswers] = useState<{ [key: string]: string | boolean }>(initializeUserAnswers(highlightedTexts, selectedTypes));
   const [skippedQuestions, setSkippedQuestions] = useState<string[]>([]);
-  const [highlightedPlaceholder, setHighlightedPlaceholder] = useState<{ [key: string]: boolean }>({}); // Track highlighted placeholders per question
+  const [, setHighlightedPlaceholder] = useState<{ [key: string]: boolean }>({}); // Track highlighted placeholders per question
   const [agreement, setAgreement] = useState<string>(documentText);
-  const previewRefs = useRef<(HTMLDivElement | null)[]>([]); // Reintroduced
+  // const previewRefs = useRef<(HTMLDivElement | null)[]>([]); // Reintroduced
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]); // Reintroduced
 
   // Helper function to initialize userAnswers with default values
@@ -143,47 +143,6 @@ const Live_Generation = () => {
   }
 
   // Helper function to update the clause based on the answer
-  const getUpdatedClause = (clause: string, placeholder: string, answer: string | boolean): string => {
-    if (!clause) return ""; // Return empty string if clause is undefined
-    const fullProbationClause = "The first [Probation Period Length] of employment will be a probationary period. The Company shall assess the Employee’s performance and suitability during this time. The Company may extend the probationary period by up to [Probation Extension Length] if further assessment is required. During the probationary period, either party may terminate the employment by providing [one week's] written notice. Upon successful completion, the Employee will be confirmed in their role.";
-    // const probationQuestion = "Is the clause of probationary period applicable?";
-    const fullTerminationClause = "After the probationary period, either party may terminate the employment by providing [Notice Period] written notice. The Company reserves the right to make a payment in lieu of notice. The Company may summarily dismiss the Employee without notice in cases of gross misconduct.";
-    const terminationQuestion = "Is the termination clause applicable?";
-    const sickPay = "The Employee may also be entitled to Company sick pay of [Details of Company Sick Pay Policy].";
-    const sickPayQuestion = "Is the sick pay policy applicable?";
-
-    const smallConditionClause = "The Employee may also be entitled to Company sick pay";
-    const probationQuestion = "Is the clause of probationary period applicable?";
-    const smallConditionQuestion = "Prachi - Is the clause of Company sick pay applicable?";
-
-    if (clause.includes(fullProbationClause)) {
-      const isApplicable = userAnswers[probationQuestion] as boolean || false;
-      if (placeholder === "" || placeholder === probationQuestion) {
-        return isApplicable ? `<div className="p-4 text-blue-600" style="opacity: 1;">${clause}</div>` : `<div className="p-4 text-blue-600" style="opacity: 0.2;">${clause}</div>`;
-      }
-      if (placeholder === "Probation Period Length" || placeholder === "Probation Extension Length" || placeholder === "one week's") {
-        return isApplicable ? clause.replace(
-          new RegExp(`\\[${placeholder.replace(/\s+/g, " ").trim()}\\]`, "gi"),
-          answer ? `<span class="${highlightedPlaceholder[placeholder] ? 'bg-lime-300' : ''}">${answer.toString().trim()}</span>` : `[${placeholder}]`
-        ) : `<div className="p-4 text-blue-600" style="opacity: 0.2;">${clause}</div>`;
-      }
-    }
-
-    // Check if the clause is the small condition clause
-    if (clause.includes(smallConditionClause)) {
-      const isApplicable = userAnswers[smallConditionQuestion] as boolean || false;
-      return isApplicable ? `<div className="p-4 text-blue-600" style="opacity: 1;">${clause}</div>` : `<div className="p-4 text-blue-600" style="opacity: 0.2;">${clause}</div>`;
-    }
-
-    // Handle all other clauses (non-probationary) normally
-    if (typeof answer === "boolean") {
-      return answer ? (clause || "") : "";
-    }
-    return `<div className="p-4 text-blue-600">${clause.replace(
-      new RegExp(`\\[${placeholder.replace(/\s+/g, " ").trim()}\\]`, "gi"),
-      answer ? `<span class="${highlightedPlaceholder[placeholder] ? 'bg-lime-300' : ''}">${answer}</span>` : `[${placeholder}]`
-    )}</div>`;
-  };
 
   // Helper function to format date answers
   const formatDateAnswer = (answer: string): string => {
@@ -298,14 +257,14 @@ const Live_Generation = () => {
     const answer = userAnswers[primaryValue] || (currentType === "Radio" ? false : "");
     const isProbationFollowUp = primaryValue === "What's the probation period length?" || primaryValue === "What's the probation extension length?" || primaryValue === "How many weeks?";
     const isProbationApplicable = userAnswers["Is the clause of probationary period applicable?"] === true;
-    const isTerminationFollowUp = primaryValue === "What's the notice period?";
-    const isTerminationApplicable = primaryValue === userAnswers["Is the termination clause applicable?"] === true;
-    const isSickPayFollowUp = primaryValue === "What's the sick pay policy?";
-    const isSickPayApplicable = primaryValue === userAnswers["Is the sick pay policy applicable?"] === true;
-    const isPrevFollowUp = primaryValue === "What's the previous employment start date?";
-    const isPrevApplicable = primaryValue === userAnswers["Is the previous service applicable?"] === true;
-    const isOvertimeFollowUp = primaryValue === "What's the overtime pay rate?";
-    const isOvertimeApplicable = primaryValue === userAnswers["Does the employee receive overtime payment?"] === true;
+    // const isTerminationFollowUp = primaryValue === "What's the notice period?";
+    // const isTerminationApplicable = primaryValue === userAnswers["Is the termination clause applicable?"] === true;
+    // const isSickPayFollowUp = primaryValue === "What's the sick pay policy?";
+    // const isSickPayApplicable = primaryValue === userAnswers["Is the sick pay policy applicable?"] === true;
+    // const isPrevFollowUp = primaryValue === "What's the previous employment start date?";
+    // const isPrevApplicable = primaryValue === userAnswers["Is the previous service applicable?"] === true;
+    // const isOvertimeFollowUp = primaryValue === "What's the overtime pay rate?";
+    // const isOvertimeApplicable = primaryValue === userAnswers["Does the employee receive overtime payment?"] === true;
 
     if (isProbationFollowUp && !isProbationApplicable) {
       return (
@@ -377,68 +336,8 @@ const Live_Generation = () => {
     }
   };
 
-  const getClauseForQuestion = (question: string, index: number): string => {
-    console.log("getClauseForQuestion called with:", { question, index, questionClauseMap });
-    const fullProbationClause = "The first [Probation Period Length] of employment will be a probationary period. The Company shall assess the Employee’s performance and suitability during this time. The Company may extend the probationary period by up to [Probation Extension Length] if further assessment is required. During the probationary period, either party may terminate the employment by providing [one week's] written notice. Upon successful completion, the Employee will be confirmed in their role.";
-    const probationQuestion = "Is the clause of probationary period applicable?";
-    const followUpQuestions = ["What's the probation period length?", "What's the probation extension length?", "How many weeks?"];
-    const fullTerminatonClause = "After the probationary period, either party may terminate the employment by providing [Notice Period] written notice. The Company reserves the right to make a payment in lieu of notice. The Company may summarily dismiss the Employee without notice in cases of gross misconduct.";
-    const terminationQuestion = "Is the termination clause applicable?";
-    const followUpTermination = ["What's the notice period?"];
-    const sickPay = "The Employee may also be entitled to Company sick pay of [Details of Company Sick Pay Policy].";
-    const sickPayQuestion = "Is the sick pay policy applicable?";
-
-    if (question === probationQuestion) {
-      const answer = userAnswers[probationQuestion] || false;
-      const clause = questionClauseMap[question] || [fullProbationClause];
-      return clause.map(clause => getUpdatedClause(clause, "", answer)).join("<hr class='my-4 border-t-2 border-gray-300'/>");
-      // return getUpdatedClause(clause || "", "", answer); // Ensure clause is a string
-    } else if (question === terminationQuestion) {
-      const answer = userAnswers[terminationQuestion] || false;
-      const clause = questionClauseMap[question] || [fullTerminatonClause];
-      return clause.map(clause => getUpdatedClause(clause, "", answer)).join("<hr class='my-4 border-t-2 border-gray-300'/>");
-      
-    } else if (followUpQuestions.includes(question)) {
-      const placeholder = question === "What's the probation period length?" ? "Probation Period Length" : "Probation Extension Length";
-      const isApplicable = userAnswers[probationQuestion] as boolean || false;
-      const answer = userAnswers[question] || "";
-      const clause = Array.isArray(questionClauseMap[question]) 
-        ? questionClauseMap[question] 
-        : [questionClauseMap[question] || findClauseByPlaceholder(placeholder) || ""];
-      // const clause = questionClauseMap[question] || fullProbationClause || findClauseByPlaceholder(placeholder); // Fallback
-      return clause.map(clause => 
-        isApplicable 
-            ? getUpdatedClause(clause, placeholder, answer) 
-            : `<div className="p-4 text-blue-600" style="opacity: 0.2;">${clause}</div>`
-      ).join("<hr class='my-4 border-t-2 border-gray-300'/>");
-      // return isApplicable ? getUpdatedClause(clause || "", placeholder, answer) : `<div className="p-4 text-blue-600" style="opacity: 0.2;">${clause || ""}</div>`;
-    }
-
-    const placeholder = Object.keys(textTypes).find(key => textTypes[key] === question) ||
-                       Object.keys(numberTypes).find(key => numberTypes[key] === question) ||
-                       Object.keys(radioTypes).find(key => radioTypes[key] === question) || "";
-    const clause = questionClauseMap[question] || [findClauseByPlaceholder(placeholder) || ""];
-    // let clause = questionClauseMap[question] || "";
-    // if (!clause && placeholder) {
-    //   clause = findClauseByPlaceholder(placeholder) || ""; // Fallback to search documentText
-    // }
-    return clause
-  .map(clause => getUpdatedClause(clause, placeholder, userAnswers[question] || ""))
-  .filter((value, index, self) => self.indexOf(value) === index) // Remove duplicates
-  .join("<hr class='my-4 border-t-2 border-gray-300'/>");
-    // return getUpdatedClause(clause, placeholder || "", userAnswers[question] || "");
-  };
 
   // Helper function to find clause by placeholder in documentText
-  const findClauseByPlaceholder = (placeholder: string): string | undefined => {
-    const sections = documentText.split("<h2");
-    for (const section of sections) {
-      if (section.includes(placeholder)) {
-        return `<h2${section}`;
-      }
-    }
-    return undefined;
-  };
 
   const handleFinish = () => {
     navigation("/Finish", { state: { userAnswers } });

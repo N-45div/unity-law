@@ -59,7 +59,7 @@ const steps = [
 const ContentComponent: React.FC = () => {
   const [count, setCount] = useState<number>(0);
   const [displayText, setDisplayText] = useState<string[]>([]);
-  const [paragraphIndex, setParagraphIndex] = useState<number>(0);
+  const [, setParagraphIndex] = useState<number>(0);
   const navigate = useNavigate(); // Add navigation hook
 
   useEffect(() => {

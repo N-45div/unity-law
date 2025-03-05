@@ -10,7 +10,7 @@ import {
   numberTypes,
   radioTypes,
   textTypes,
-  validateQuestionRelevance,
+  // validateQuestionRelevance,
   QuestionType,
 } from "../utils/questionTypeUtils";
 
@@ -36,9 +36,9 @@ const DivWithDropdown: React.FC<DivWithDropdownProps> = ({
   );
   const [selectedType, setSelectedType] = useState<string>("Text");
   const [isOpen, setIsOpen] = useState(false);
-  const { selectedTypes } = useQuestionType();
+  // const { selectedTypes } = useQuestionType();
   const { highlightedTexts } = useHighlightedText();
-  const { primaryType, primaryValue, validTypes } =
+  const { primaryValue, validTypes } =
     determineQuestionType(textValue);
 
   // ... (useEffect and other existing logic remains unchanged)

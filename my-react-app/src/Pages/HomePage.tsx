@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import {
   FaFileAlt,
-  FaProjectDiagram,
+  // FaProjectDiagram,
   FaHandshake,
   FaTimes,
   FaChevronRight,

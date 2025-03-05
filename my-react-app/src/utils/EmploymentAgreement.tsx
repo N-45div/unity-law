@@ -153,15 +153,8 @@ export const documentText = `
 
 // and this is for JSX component for LevelTwoPart_Two
 const EmploymentAgreement: React.FC = () => {
-  const { highlightedTexts } = useHighlightedText();
+  useHighlightedText();
 
-  const highlight = (text: string) => {
-    return text.replace(/\[(.*?)\]/g, (match, content) => {
-      return highlightedTexts.includes(content)
-        ? `<span style="background-color: yellow;">${match}</span>`
-        : match;
-    });
-  };
   return (
     <div className="bg-white rounded-lg shadow-sm border border-black-100 p-8">
       <h1 className="text-blue-600 text-3xl font-bold mb-8 tracking-tight">

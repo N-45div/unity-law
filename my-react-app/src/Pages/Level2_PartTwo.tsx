@@ -15,9 +15,9 @@ const icons = [
 
 const LevelTwoPart_Two = () => {
   const [tooltip, setTooltip] = useState<string | null>(null);
-  const [selectedOvertimeClause, setSelectedOvertimeClause] = useState<
-    string | null
-  >(null);
+  // const [selectedOvertimeClause, setSelectedOvertimeClause] = useState<
+  //   string | null
+  // >(null);
   const { highlightedTexts, addHighlightedText } = useHighlightedText();
 
   const handleIconClick = (label: string) => {
@@ -26,10 +26,10 @@ const LevelTwoPart_Two = () => {
 
     const range = selection.getRangeAt(0);
     const selectedText = range.toString();
-    const overtimeClause1 =
-      "[The Employee is entitled to overtime pay at a rate of [Overtime Pay Rate] for authorized overtime work]";
-    const overtimeClause2 =
-      "[The Employee shall not receive additional payment for overtime worked]";
+    // const overtimeClause1 =
+    //   "[The Employee is entitled to overtime pay at a rate of [Overtime Pay Rate] for authorized overtime work]";
+    // const overtimeClause2 =
+    //   "[The Employee shall not receive additional payment for overtime worked]";
 
     if (selectedText.startsWith("[") && selectedText.endsWith("]")) {
       const textWithoutBrackets = selectedText.slice(1, -1);

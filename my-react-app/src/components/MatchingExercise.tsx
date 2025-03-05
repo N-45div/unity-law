@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import { useNavigate } from 'react-router-dom';
 import { MatchingItem } from '../types';
 import MatchLine from './MatchLine';
 import '../styles/MatchingExercise.css';
@@ -27,7 +27,7 @@ const MatchingExercise = ({ data }: MatchingExerciseProps) => {
 
   const termRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const defRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
-  const navigate = useNavigate(); // Add navigation hook
+  const navigate = useNavigate();
 
   const handleTermClick = (item: MatchingItem) => {
     if (item.isMatched) return;
@@ -83,14 +83,6 @@ const MatchingExercise = ({ data }: MatchingExerciseProps) => {
     setSelectedTerm(null);
   };
 
-  const resetExercise = () => {
-    setItems(data.map((item) => ({ ...item, isMatched: false })));
-    setSelectedTerm(null);
-    setMatches({});
-    setLines([]);
-    setShowCompletion(false);
-  };
-
   useEffect(() => {
     const updateLines = () => {
       setLines((prevLines) =>
@@ -136,7 +128,9 @@ const MatchingExercise = ({ data }: MatchingExerciseProps) => {
           {items.map((item) => (
             <div
               key={`term-${item.id}`}
-              ref={(el) => (termRefs.current[item.id] = el)}
+              ref={(el: HTMLDivElement | null) => {
+                termRefs.current[item.id] = el; // Explicitly assign without returning
+              }}
               className={`term-item ${selectedTerm?.id === item.id ? 'selected' : ''} ${item.isMatched ? 'matched' : ''}`}
               onClick={() => handleTermClick(item)}
             >
@@ -149,7 +143,9 @@ const MatchingExercise = ({ data }: MatchingExerciseProps) => {
           {items.map((item) => (
             <div
               key={`def-${item.id}`}
-              ref={(el) => (defRefs.current[item.id] = el)}
+              ref={(el: HTMLDivElement | null) => {
+                defRefs.current[item.id] = el; // Explicitly assign without returning
+              }}
               className={`definition-item ${item.isMatched ? 'matched' : ''}`}
               onClick={() => handleDefinitionClick(item)}
             >
