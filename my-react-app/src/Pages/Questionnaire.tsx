@@ -1,5 +1,4 @@
 // Questionnaire.tsx
-
 import Navbar from "../components/Navbar";
 import { FaChevronDown, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { useState, useEffect } from "react";
@@ -10,11 +9,8 @@ import {
   numberTypes,
   radioTypes,
   textTypes,
-  // validateQuestionRelevance,
   QuestionType,
 } from "../utils/questionTypeUtils";
-
-// Inside Questionnaire.tsx (combined with DivWithDropdown)
 
 interface DivWithDropdownProps {
   textValue: string;
@@ -36,20 +32,14 @@ const DivWithDropdown: React.FC<DivWithDropdownProps> = ({
   );
   const [selectedType, setSelectedType] = useState<string>("Text");
   const [isOpen, setIsOpen] = useState(false);
-  // const { selectedTypes } = useQuestionType();
   const { highlightedTexts } = useHighlightedText();
-  const { primaryValue, validTypes } =
-    determineQuestionType(textValue);
-
-  // ... (useEffect and other existing logic remains unchanged)
+  const { primaryValue, validTypes } = determineQuestionType(textValue);
 
   const handleTypeSelect = (type: string) => {
     const validType = validTypes.includes(type as QuestionType);
     if (!validType) {
       alert(
-        `Only ${validTypes.join(
-          ", "
-        )} type questions can be made for this question. Please select an appropriate type.`
+        `Only ${validTypes.join(", ")} type questions can be made for this question. Please select an appropriate type.`
       );
       return;
     }
@@ -151,11 +141,12 @@ const Questionnaire = () => {
   const [leftActive, setLeftActive] = useState(true);
   const [rightActive, setRightActive] = useState(false);
   const { highlightedTexts } = useHighlightedText();
-  const { selectedTypes, setSelectedTypes } = useQuestionType();
+  const { selectedTypes, setSelectedTypes, editedQuestions, setEditedQuestions } = useQuestionType();
   const [uniqueQuestions, setUniqueQuestions] = useState<string[]>([]);
   const [duplicateDetected, setDuplicateDetected] = useState<boolean>(false);
   const [questionTexts, setQuestionTexts] = useState<string[]>([]);
 
+  // Initialize only when highlightedTexts changes, and preserve existing editedQuestions
   useEffect(() => {
     const processedTexts = [];
     const questionMap = new Map();
@@ -167,28 +158,36 @@ const Questionnaire = () => {
         questionMap.set(primaryValue, text);
         processedTexts.push(text);
       } else if (primaryValue && questionMap.get(primaryValue) === text) {
-        // Only set duplicate to true if the exact text already exists in questionMap
         setDuplicateDetected(true);
         setTimeout(() => setDuplicateDetected(false), 3000);
       }
     }
 
     setUniqueQuestions(processedTexts);
-    const initialTexts = processedTexts.map(
-      (text) => determineQuestionType(text).primaryValue || "No text selected"
-    );
-    const initialTypes = processedTexts.map((text) => {
-      const probationClause =
-        "[The first [Probation Period Length] of employment will be a probationary period. The Company shall assess the Employee's performance and suitability during this time. The Company may extend the probationary period by up to [Probation Extension Length] if further assessment is required. During the probationary period, either party may terminate the employment by providing [one week's] written notice. Upon successful completion, the Employee will be confirmed in their role.]";
-      if (text === probationClause) return "Radio";
-      if (textTypes.hasOwnProperty(text)) return "Text";
-      if (numberTypes.hasOwnProperty(text)) return "Number";
-      if (radioTypes.hasOwnProperty(text)) return "Radio";
-      return "Text";
-    });
-    setQuestionTexts(initialTexts);
-    setSelectedTypes(initialTypes);
-  }, [highlightedTexts, setSelectedTypes]);
+
+    // Only initialize if there are no existing editedQuestions or if the length doesn't match
+    if (editedQuestions.length === 0 || editedQuestions.length !== processedTexts.length) {
+      const initialTexts = processedTexts.map(
+        (text) => determineQuestionType(text).primaryValue || "No text selected"
+      );
+      const initialTypes = processedTexts.map((text) => {
+        const probationClause =
+          "[The first [Probation Period Length] of employment will be a probationary period. The Company shall assess the Employee's performance and suitability during this time. The Company may extend the probationary period by up to [Probation Extension Length] if further assessment is required. During the probationary period, either party may terminate the employment by providing [one week's] written notice. Upon successful completion, the Employee will be confirmed in their role.]";
+        if (text === probationClause) return "Radio";
+        if (textTypes.hasOwnProperty(text)) return "Text";
+        if (numberTypes.hasOwnProperty(text)) return "Number";
+        if (radioTypes.hasOwnProperty(text)) return "Radio";
+        return "Text";
+      });
+      setQuestionTexts(initialTexts);
+      setSelectedTypes(initialTypes);
+      setEditedQuestions(initialTexts); // Initialize edited questions only if new
+    } else {
+      // Sync local questionTexts with existing editedQuestions
+      setQuestionTexts([...editedQuestions]);
+      setSelectedTypes(selectedTypes.length === processedTexts.length ? [...selectedTypes] : processedTexts.map(() => "Text"));
+    }
+  }, [highlightedTexts, setSelectedTypes, setEditedQuestions, editedQuestions.length, selectedTypes.length]);
 
   const handleTypeChange = (index: number, type: string) => {
     const textValue = uniqueQuestions[index];
@@ -196,9 +195,7 @@ const Questionnaire = () => {
     const validType = validTypes.includes(type as QuestionType);
     if (!validType) {
       alert(
-        `Only ${validTypes.join(
-          ", "
-        )} type questions can be made for this question. Please select an appropriate type.`
+        `Only ${validTypes.join(", ")} type questions can be made for this question. Please select an appropriate type.`
       );
       return;
     }
@@ -221,14 +218,15 @@ const Questionnaire = () => {
         newTexts[index] = primaryValue;
       }
       setQuestionTexts(newTexts);
+      setEditedQuestions(newTexts); // Update edited questions
     }
   };
 
   const handleQuestionTextChange = (index: number, newText: string) => {
-    // Also removed validation in the parent component to allow free editing
     const newTexts = [...questionTexts];
     newTexts[index] = newText;
     setQuestionTexts(newTexts);
+    setEditedQuestions(newTexts); // Update edited questions
   };
 
   return (
@@ -288,7 +286,7 @@ const Questionnaire = () => {
                 index={index}
                 onTypeChange={handleTypeChange}
                 onQuestionTextChange={handleQuestionTextChange}
-                initialQuestionText={questionTexts[index]}
+                initialQuestionText={questionTexts[index] || editedQuestions[index] || "No text selected"}
               />
             ))
           ) : (
@@ -307,5 +305,3 @@ const Questionnaire = () => {
 };
 
 export default Questionnaire;
-
-// original

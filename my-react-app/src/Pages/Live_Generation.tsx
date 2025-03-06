@@ -1,3 +1,4 @@
+// Live_Generation.tsx
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import Navbar from "../components/Navbar";
@@ -28,26 +29,11 @@ const mapQuestionsToClauses = (
   const priorityMappings: { [key: string]: string } = {
     "What's the name of the employee?": "PARTIES",
     "What's the employee's address?": "PARTIES",
-    
   };
 
   clauses.forEach((clause) => {
-    // if (clause.includes('<h2 className="text-2xl font-bold">PARTIES</h2>')) {
-    //   Object.keys(textTypes).forEach((key) => {
-    //     const placeholder = `[${key}]`;
-    //     if (clause.includes(placeholder)) {
-    //       const question = textTypes[key];
-    //       if (priorityMappings.hasOwnProperty(question)) {
-    //         questionClauseMap[question].push(clause);
-    //         console.log(`Mapped ${question} to PARTIES clause with placeholder ${placeholder}`); // Debug log
-    //       }
-    //     }
-    //   });
-    // }
-
     Object.keys(textTypes).forEach((key) => {
       const placeholder = `[${key}]`;
-      
       if (clause.replace(/\s+/g, " ").includes(placeholder)) {
         if (!textTypes[key]) {
           console.error(`Error: No question mapped for ${key}`);
@@ -70,8 +56,7 @@ const mapQuestionsToClauses = (
 
     const fullProbationClause = "The first [Probation Period Length] of employment will be a probationary period. The Company shall assess the Employee’s performance and suitability during this time. The Company may extend the probationary period by up to [Probation Extension Length] if further assessment is required. During the probationary period, either party may terminate the employment by providing [one week's] written notice. Upon successful completion, the Employee will be confirmed in their role.";
     const fullTerminatonClause = "After the probationary period, either party may terminate the employment by providing [Notice Period] written notice. The Company reserves the right to make a payment in lieu of notice. The Company may summarily dismiss the Employee without notice in cases of gross misconduct.";
-    // const sickPay = "The Employee may also be entitled to Company sick pay of [Details of Company Sick Pay Policy].";
-         
+    
     Object.keys(radioTypes).forEach((key) => {
       const placeholder = `[${key}]`;
       console.log(`Checking: key=${key}, placeholder=${placeholder}, mapped question=${textTypes[key]}`);
@@ -98,7 +83,6 @@ const mapQuestionsToClauses = (
     }
   });
 
-  // Fallback to ensure all highlighted questions get a clause
   Object.keys(priorityMappings).forEach((question) => {
     if (!questionClauseMap[question]) {
       questionClauseMap[question] = [];
@@ -120,13 +104,12 @@ const mapQuestionsToClauses = (
 const Live_Generation = () => {
   const navigation = useNavigate();
   const { highlightedTexts } = useHighlightedText();
-  const { selectedTypes } = useQuestionType();
+  const { selectedTypes, editedQuestions } = useQuestionType();
   const [, setQuestionClauseMap] = useState<{ [key: string]: string[] }>({});
   const [userAnswers, setUserAnswers] = useState<{ [key: string]: string | boolean }>(initializeUserAnswers(highlightedTexts, selectedTypes));
   const [skippedQuestions, setSkippedQuestions] = useState<string[]>([]);
   const [, setHighlightedPlaceholder] = useState<{ [key: string]: boolean }>({}); // Track highlighted placeholders per question
   const [agreement, setAgreement] = useState<string>(documentText);
-  // const previewRefs = useRef<(HTMLDivElement | null)[]>([]); // Reintroduced
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]); // Reintroduced
 
   // Helper function to initialize userAnswers with default values
@@ -142,9 +125,6 @@ const Live_Generation = () => {
     return initialAnswers;
   }
 
-  // Helper function to update the clause based on the answer
-
-  // Helper function to format date answers
   const formatDateAnswer = (answer: string): string => {
     const cleanedAnswer = answer.trim().replace(/[^0-9A-Za-z\s/]/g, '');
     if (cleanedAnswer.includes('/')) {
@@ -184,11 +164,6 @@ const Live_Generation = () => {
     const followUpOvertime = ["What's the overtime pay rate?"];
     const isOvertimeApplicable = userAnswers[overtimeQuestion] as boolean || false;
 
-    // if (!isProbationApplicable) {
-    //   setSkippedQuestions(followUpQuestions);
-    // } else {
-    //   setSkippedQuestions([]);
-    // }
     const skipped = [
       ...(isProbationApplicable ? [] : followUpQuestions), 
       ...(isTerminationApplicable ? [] : followUpTermination),
@@ -207,18 +182,15 @@ const Live_Generation = () => {
   useEffect(() => {
     let updatedText = documentText;
     Object.entries(userAnswers).forEach(([question, answer]) => {
-      const placeholder = findPlaceholderByValue(question); // Get the correct placeholder
-
+      const placeholder = findPlaceholderByValue(question);
       if (!placeholder) return;
       const escapedPlaceholder = placeholder.replace(/[.*+?^=!:${}()|\[\]\/\\]/g, "\\$&");
       console.log("Processing answer:", { placeholder, question, answer });
       if (typeof answer === "boolean") {
-        // Handle sections that should be visible/invisible based on boolean values
         if (!answer) {
           updatedText = updatedText.replace(new RegExp(`.*${escapedPlaceholder}.*`, "gi"), "");
         }
       } else {
-        // Replace placeholders dynamically
         updatedText = updatedText.replace(
           new RegExp(`\\[${placeholder.replace(/\s+/g, " ")}\\]`, "gi"),
           answer ? `<span class="bg-lime-300">${answer}</span>` : `[${placeholder}]`
@@ -238,7 +210,6 @@ const Live_Generation = () => {
 
     console.log("Handling answer change for:", { primaryValue, value, currentType, index, placeholder });
 
-    // Highlight the placeholder persistently for the current question
     setHighlightedPlaceholder(prev => ({
       ...prev,
       [placeholder || '']: true,
@@ -257,14 +228,6 @@ const Live_Generation = () => {
     const answer = userAnswers[primaryValue] || (currentType === "Radio" ? false : "");
     const isProbationFollowUp = primaryValue === "What's the probation period length?" || primaryValue === "What's the probation extension length?" || primaryValue === "How many weeks?";
     const isProbationApplicable = userAnswers["Is the clause of probationary period applicable?"] === true;
-    // const isTerminationFollowUp = primaryValue === "What's the notice period?";
-    // const isTerminationApplicable = primaryValue === userAnswers["Is the termination clause applicable?"] === true;
-    // const isSickPayFollowUp = primaryValue === "What's the sick pay policy?";
-    // const isSickPayApplicable = primaryValue === userAnswers["Is the sick pay policy applicable?"] === true;
-    // const isPrevFollowUp = primaryValue === "What's the previous employment start date?";
-    // const isPrevApplicable = primaryValue === userAnswers["Is the previous service applicable?"] === true;
-    // const isOvertimeFollowUp = primaryValue === "What's the overtime pay rate?";
-    // const isOvertimeApplicable = primaryValue === userAnswers["Does the employee receive overtime payment?"] === true;
 
     if (isProbationFollowUp && !isProbationApplicable) {
       return (
@@ -278,7 +241,7 @@ const Live_Generation = () => {
       case "Text":
         return (
           <input
-            ref={el => { if (el) inputRefs.current[index] = el; }} // Safe ref assignment
+            ref={el => { if (el) inputRefs.current[index] = el; }}
             type="text"
             value={typeof answer === "string" ? answer : ""}
             onChange={(e) => handleAnswerChange(index, e.target.value)}
@@ -289,7 +252,7 @@ const Live_Generation = () => {
       case "Number":
         return (
           <input
-            ref={el => { if (el) inputRefs.current[index] = el; }} // Safe ref assignment
+            ref={el => { if (el) inputRefs.current[index] = el; }}
             type="text"
             value={typeof answer === "string" ? answer : ""}
             onChange={(e) => handleAnswerChange(index, formatDateAnswer(e.target.value))}
@@ -325,7 +288,7 @@ const Live_Generation = () => {
       default:
         return (
           <input
-            ref={el => { if (el) inputRefs.current[index] = el; }} // Safe ref assignment
+            ref={el => { if (el) inputRefs.current[index] = el; }}
             type="text"
             value={typeof answer === "string" ? answer : ""}
             onChange={(e) => handleAnswerChange(index, e.target.value)}
@@ -335,9 +298,6 @@ const Live_Generation = () => {
         );
     }
   };
-
-
-  // Helper function to find clause by placeholder in documentText
 
   const handleFinish = () => {
     navigation("/Finish", { state: { userAnswers } });
@@ -359,7 +319,8 @@ const Live_Generation = () => {
                     return (
                       <div key={index} className="flex mb-6">
                         <div className="w-full pr-4">
-                          <p className="text-lg">{primaryValue || "Unnamed Question"}</p>
+                          {/* Use editedQuestions instead of primaryValue */}
+                          <p className="text-lg">{editedQuestions[index] || primaryValue || "Unnamed Question"}</p>
                           {renderAnswerInput(index)}
                         </div>
                       </div>
@@ -396,10 +357,6 @@ const Live_Generation = () => {
       </div>
     </div>
   );
-  
 };
 
 export default Live_Generation;
-
-
-// original 3
