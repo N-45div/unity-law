@@ -3,14 +3,7 @@ import { useNavigate, useLocation } from "react-router";
 import { FaTools, FaSun, FaMoon } from "react-icons/fa";
 import { ThemeContext } from "../context/ThemeContext";
 
-interface NavbarProps {
-  level: string;
-  questionnaire: string;
-  live_generation: string;
-  calculations?: string;
-}
-
-const Navbar: React.FC<NavbarProps> = ({ level, questionnaire, live_generation, calculations }) => {
+const Navbar = () => {
   const { isDarkMode, toggleDarkMode } = useContext(ThemeContext);
   const location = useLocation();
   const navigation = useNavigate();
@@ -18,43 +11,33 @@ const Navbar: React.FC<NavbarProps> = ({ level, questionnaire, live_generation, 
   const [tooltip, setTooltip] = useState<string | null>(null);
 
   useEffect(() => {
-    // Determine the active button by comparing the current pathname with the props
-    const pathname = location.pathname;
-    if (pathname === level) {
-      setActiveButton("Document");
-    } else if (pathname === questionnaire) {
-      setActiveButton("Questionnaire");
-    } else if (pathname === live_generation) {
-      setActiveButton("Live Document Generation");
-    } else if (pathname === "/Finish") {
-      setActiveButton("Generated Document");
-    } else if (pathname === calculations) {
-      setActiveButton("Calculations");
-    } else {
-      setActiveButton(null);
-    }
-  }, [location.pathname, level, questionnaire, live_generation, calculations]);
+    const routes: Record<string, string> = {
+      "/Level-Two-Part-Two": "Document",
+      "/Questionnaire": "Questionnaire",
+      "/Live_Generation": "Live Document Generation",
+      "/Live_Generation_2": "Live Document Generation",
+      "/Finish": "Generated Document",
+    };
+
+    const activeLabel = routes[location.pathname] || null;
+    console.log("Current pathname:", location.pathname, "Active label:", activeLabel);
+    setActiveButton(activeLabel);
+  }, [location.pathname]);
 
   const handlePageChange = (label: string) => {
-    const routes: Record<string, string | null | undefined> = {
-      Document: level,
-      Questionnaire: questionnaire,
-      "Live Document Generation": live_generation,
+    const routes: Record<string, string> = {
+      Document: "/Level-Two-Part-Two",
+      Questionnaire: "/Questionnaire",
+      "Live Document Generation": "/Live_Generation",
       "Generated Document": "/Finish",
-      Calculations: calculations,
     };
 
     const path = routes[label];
+    console.log("Navigating to:", path);
     if (path) {
       navigation(path);
     }
   };
-
-  const pages = ["Document", "Questionnaire"];
-  if (typeof calculations !== "undefined") {
-    pages.push("Calculations");
-  }
-  pages.push("Live Document Generation");
 
   return (
     <div
@@ -66,8 +49,17 @@ const Navbar: React.FC<NavbarProps> = ({ level, questionnaire, live_generation, 
         <div className="flex items-center justify-between">
           <div className="flex-1 flex">
             {location.pathname !== "/Finish" ? (
-              pages.map((label) => (
+              ["Document", "Questionnaire", "Live Document Generation"].map((label,idx) => (
                 <button
+                id={
+                  idx === 1
+                    ? "Questionnaire-button"
+                    : idx === 2
+                    ? "live-document-generation"
+                    : idx === 0
+                    ? "document-page"
+                    : undefined
+                }
                   key={label}
                   className={`px-8 py-3 cursor-pointer font-medium border-r border-lime-400 transition-colors duration-200 flex items-center space-x-2 ${
                     activeButton === label
@@ -125,7 +117,7 @@ const Navbar: React.FC<NavbarProps> = ({ level, questionnaire, live_generation, 
             </div>
             <button
               onClick={toggleDarkMode}
-              className={`p-2 relative left-[12vw] rounded-full shadow-md transition-all duration-300 transform hover:scale-110 ${
+              className={`p-2  relative   left-[12vw]  rounded-full shadow-md transition-all duration-300 transform hover:scale-110 ${
                 isDarkMode
                   ? "bg-gray-600 text-yellow-400 hover:bg-gray-100 "
                   : "bg-lime-900 text-white hover:bg-black"

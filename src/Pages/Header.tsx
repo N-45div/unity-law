@@ -1,132 +1,71 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 
 interface HeaderProps {
-  isDarkMode: boolean; // Prop to control dark mode
+  isDarkMode: boolean;
 }
 
 const Header: React.FC<HeaderProps> = ({ isDarkMode }) => {
-  const [slideIn, setSlideIn] = useState<boolean>(false);
-  const [menuOpen, setMenuOpen] = useState<boolean>(false);
-  const toggleMenu = () => {
-    setMenuOpen((prev) => !prev);
-  };
-
-  useEffect(() => {
-    setSlideIn(true);
-  }, []);
-
   return (
-    <div
-      className={`pt-16 pb-0 ml-6 transition-transform duration-700 ease-out transform ${
-        slideIn ? "translate-y-0" : "-translate-y-full"
-      }`}
-    >
-      <div className="hidden sm:flex flex-wrap space-x-4">
+    <div className="flex items-center">
+      {/* Logo/Brand */}
+      <div className="flex items-center">
+        <span className={`text-xl font-bold ${
+          isDarkMode ? "text-white" : "text-gray-900"
+        }`}>
+          CLM Training
+        </span>
+        <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
+          isDarkMode 
+            ? "bg-teal-800/70 text-teal-200" 
+            : "bg-teal-100 text-teal-800"
+        }`}>
+          Beta
+        </span>
+      </div>
+      
+      {/* Desktop Navigation Links - only visible on desktop */}
+      <div className="hidden md:flex ml-6 space-x-4">
         <a
           href="#"
-          onClick={(e) => e.preventDefault()} // Remove this line when implementing actual routing
-          className={`rounded-md px-3 py-2 text-sm font-medium ${
+          className={`rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 ${
             isDarkMode
-              ? "bg-gray-700 text-white hover:bg-gray-600"
-              : "bg-gray-700 text-white hover:bg-gray-600"
+              ? "text-white hover:bg-gray-800"
+              : "text-gray-700 hover:bg-gray-100"
           }`}
-          aria-current="page"
         >
-          About
+          Dashboard
         </a>
         <a
           href="#"
-          onClick={(e) => e.preventDefault()} // Remove this line when implementing actual routing
-          className={`rounded-md px-3 py-2 text-sm font-medium ${
+          className={`rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 ${
             isDarkMode
-              ? "text-white hover:bg-gray-700 hover:text-white"
-              : "text-gray-600 hover:bg-gray-700 hover:text-white"
+              ? "text-gray-300 hover:bg-gray-800 hover:text-white"
+              : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
           }`}
-          aria-current="page"
         >
           Progress
         </a>
         <a
           href="#"
-          onClick={(e) => e.preventDefault()} // Remove this line when implementing actual routing
-          className={`rounded-md px-3 py-2 text-sm font-medium ${
+          className={`rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 ${
             isDarkMode
-              ? "text-white hover:bg-gray-700 hover:text-white"
-              : "text-gray-600 hover:bg-gray-700 hover:text-white"
+              ? "text-gray-300 hover:bg-gray-800 hover:text-white"
+              : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
           }`}
         >
           Certification
         </a>
         <a
           href="#"
-          onClick={(e) => e.preventDefault()} // Remove this line when implementing actual routing
-          className={`rounded-md px-3 py-2 text-sm font-medium ${
+          className={`rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 ${
             isDarkMode
-              ? "text-white hover:bg-gray-700 hover:text-white"
-              : "text-gray-600 hover:bg-gray-700 hover:text-white"
+              ? "text-gray-300 hover:bg-gray-800 hover:text-white"
+              : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
           }`}
         >
-          Your Profile
-        </a>
-        <a
-          href="#"
-          onClick={(e) => e.preventDefault()} // Remove this line when implementing actual routing
-          className={`rounded-md px-3 py-2 text-sm font-medium ${
-            isDarkMode
-              ? "text-white hover:bg-gray-700 hover:text-white"
-              : "text-gray-600 hover:bg-gray-700 hover:text-white"
-          }`}
-          aria-current="page"
-        >
-          Fun Fact
+          Resources
         </a>
       </div>
-      <button
-        id="hamburger-menu"
-        className="sm:hidden flex flex-col space-y-1.5 w-8 h-8 justify-center items-center focus:outline-none absolute top-10 right-4"
-        onClick={toggleMenu}
-      >
-        <div className={`w-6 h-0.5 ${isDarkMode ? "bg-white" : "bg-black"}`}></div>
-        <div className={`w-6 h-0.5 ${isDarkMode ? "bg-white" : "bg-black"}`}></div>
-        <div className={`w-6 h-0.5 ${isDarkMode ? "bg-white" : "bg-black"}`}></div>
-      </button>
-      {menuOpen && (
-        <div className="sm:hidden mt-4 flex flex-col space-y-2">
-          <a
-            href="#"
-            onClick={(e) => e.preventDefault()}
-            className={`rounded-md px-3 py-2 text-sm font-medium ${
-              isDarkMode
-                ? "bg-gray-700 text-white hover:bg-gray-600"
-                : "bg-gray-700 text-white hover:bg-gray-600"
-            }`}
-          >
-            Progress
-          </a>
-          <a
-            href="#"
-            onClick={(e) => e.preventDefault()}
-            className={`rounded-md px-3 py-2 text-sm font-medium ${
-              isDarkMode
-                ? "text-white hover:bg-gray-700 hover:text-white"
-                : "text-gray-600 hover:bg-gray-700 hover:text-white"
-            }`}
-          >
-            Certification
-          </a>
-          <a
-            href="#"
-            onClick={(e) => e.preventDefault()}
-            className={`rounded-md px-3 py-2 text-sm font-medium ${
-              isDarkMode
-                ? "text-white hover:bg-gray-700 hover:text-white"
-                : "text-gray-600 hover:bg-gray-700 hover:text-white"
-            }`}
-          >
-            Your Profile
-          </a>
-        </div>
-      )}
     </div>
   );
 };

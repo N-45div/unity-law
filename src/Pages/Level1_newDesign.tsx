@@ -1,17 +1,21 @@
-import React, { ReactNode } from "react";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import "@fontsource/orbitron/900.css";
 import "@fontsource/pixelify-sans/400.css";
-import { motion } from "framer-motion";   // need npm install framer-motion
+import { motion } from "framer-motion";
 import correctSound from "../assets/correct.mp3";
 import incorrectSound from "../assets/incorrect.mp3";
+import { auth } from "./firebase";
+import { onAuthStateChanged } from "firebase/auth";
+import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
 
-// Props for top buttons
+// Initialize Firestore
+const db = getFirestore();
+
 interface CustomButtonProps {
-  children: ReactNode;
+  children: React.ReactNode;
 }
 
-// Top bar button (Question 1, Score 100)
 const CustomButton: React.FC<CustomButtonProps> = ({ children }) => {
   return (
     <button className="px-4 py-1 my-2 bg-white rounded-full text-[#34C759] text-[18px] shadow-lg shadow-black/50">
@@ -21,6 +25,7 @@ const CustomButton: React.FC<CustomButtonProps> = ({ children }) => {
 };
 
 const LevelOneDesign = () => {
+  const navigate = useNavigate();
   const [score, setScore] = useState<number>(0);
   const [scoreChange, setScoreChange] = useState<number | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
@@ -30,9 +35,40 @@ const LevelOneDesign = () => {
   const [showHint, setShowHint] = useState<boolean>(false);
   const [hintLimit, setHintLimit] = useState<number>(5);
   const [hintToggled, setHintToggled] = useState<boolean>(false);
+  const [user, setUser] = useState<any>(null);
+  const [highestScore, setHighestScore] = useState<number>(0);
+  const [attempts, setAttempts] = useState<number>(0);
   const correctSoundRef = new Audio(correctSound);
   const incorrectSoundRef = new Audio(incorrectSound);
 
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      if (currentUser) {
+        fetchUserData(currentUser.uid);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const fetchUserData = async (userId: string) => {
+    try {
+      const userDocRef = doc(db, "users", userId);
+      const userDoc = await getDoc(userDocRef);
+      
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        // Get existing highest score and attempts for level 1
+        const levelData = userData.levelStats && userData.levelStats[1];
+        if (levelData) {
+          setHighestScore(levelData.highestScore || 0);
+          setAttempts(levelData.attempts || 0);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    }
+  };
 
   useEffect(() => {
     if (selected) {
@@ -108,10 +144,10 @@ const LevelOneDesign = () => {
     },
     {
       question:
-        "6. How can you ensure a contract automatically selects the correct jurisdiction based on the client’s location?",
+        "6. How can you ensure a contract automatically selects the correct jurisdiction based on the client's location?",
       options: [
         "Ask the user to manually choose the jurisdiction each time",
-        "Use a variable that pulls the jurisdiction based on the client’s location data",
+        "Use a variable that pulls the jurisdiction based on the client's location data",
         " Include all possible jurisdictions and let the user delete the irrelevant ones",
         "Hardcode a default jurisdiction for all contracts",
       ],
@@ -185,21 +221,86 @@ const LevelOneDesign = () => {
     }
     if (change !== 0) {
       setScoreChange(change);
-      setTimeout(() => setScoreChange(null), 2000); // Hide after 2 seconds
+      setTimeout(() => setScoreChange(null), 2000);
     }
   };
- 
 
-  const handleNext = () => {
+  const saveScoreToFirestore = async () => {
+    if (!user) return;
+
+    try {
+      const userRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userRef);
+      
+      // Get current attempt count
+      const newAttemptCount = attempts + 1;
+      
+      // Determine if this is a new high score
+      const isNewHighScore = score > highestScore;
+      const newHighestScore = isNewHighScore ? score : highestScore;
+      
+      // Create updated user data
+      const userData: any = {
+        // Keep track of quiz history
+        quizScores: [{
+          level: 1,
+          score: score,
+          timestamp: new Date(),
+          attempt: newAttemptCount
+        }],
+        // Keep track of level stats
+        levelStats: {
+          1: {
+            highestScore: newHighestScore,
+            attempts: newAttemptCount,
+            lastPlayed: new Date()
+          }
+        }
+      };
+      
+      // If user document already exists, preserve existing quiz scores
+      if (userDoc.exists()) {
+        const existingData = userDoc.data();
+        
+        if (existingData.quizScores && Array.isArray(existingData.quizScores)) {
+          userData.quizScores = [...existingData.quizScores, ...userData.quizScores];
+        }
+        
+        // Preserve stats for other levels
+        if (existingData.levelStats) {
+          userData.levelStats = {
+            ...existingData.levelStats,
+            ...userData.levelStats
+          };
+        }
+      }
+      
+      // Update the database
+      await setDoc(userRef, userData, { merge: true });
+      
+      // Update local state
+      setAttempts(newAttemptCount);
+      if (isNewHighScore) {
+        setHighestScore(score);
+      }
+      
+    } catch (error) {
+      console.error("Error saving score: ", error);
+    }
+  };
+
+  const handleNext = async () => {
     if (selected) {
       setSelected(false);
       setShowHint(false);
       setHintToggled(false);
       setProgressIndex((prevIndex) => prevIndex + 1);
+
       if (currentQuestionIndex < questions.length - 1) {
         setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
         setSelected(false);
       } else {
+        await saveScoreToFirestore();
         setShowPopup(true);
       }
       window.scrollTo({
@@ -225,7 +326,7 @@ const LevelOneDesign = () => {
 
   return (
     <div className="bg-[url('/src/assets/Level1_background.png')] bg-center h-screen w-screen px-2 font-[Orbitron] flex flex-col justify-between py-4 overflow-y-auto">
-      {/* Header section with progress bar  */}
+      {/* Header section with progress bar */}
       <div className="flex-none px-2 sm:px-4">
         <div className="flex items-center space-x-4 lg:mt-2">
           <div className="w-full bg-opacity-30 bg-indigo-300 h-2 sm:h-3 md:h-4 rounded-full overflow-hidden border border-indigo-500/30">
@@ -238,7 +339,6 @@ const LevelOneDesign = () => {
         {/* Top bar (Question and Score) */}
         <div className="flex flex-col sm:flex-row justify-between px-2 py-2">
           <CustomButton>QUESTION {currentQuestionIndex + 1}</CustomButton>
-  
           <div className="flex gap-x-2 sm:gap-x-4 relative">
             <div className="relative">
               <CustomButton>Score: {score}</CustomButton>
@@ -249,7 +349,7 @@ const LevelOneDesign = () => {
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 1 }}
                   className={`absolute -top-6 right-0 text-sm sm:text-lg font-bold ${
-                    scoreChange > 0 ? 'text-green-500' : 'text-red-500'
+                    scoreChange > 0 ? "text-green-500" : "text-red-500"
                   }`}
                 >
                   {scoreChange > 0 ? `+${scoreChange}` : scoreChange}
@@ -260,27 +360,29 @@ const LevelOneDesign = () => {
           </div>
         </div>
       </div>
-  
+
       {/* Main Content Centered */}
       <div className="flex flex-col items-center gap-4 sm:gap-8 px-2 sm:px-4">
         {/* Centered Question */}
         <div
           className="uppercase text-white text-center px-4 sm:px-24 py-2 sm:py-3 rounded-2xl text-sm sm:text-lg md:text-xl"
-          style={{ backgroundColor: 'rgba(84, 84, 86, 0.34)' }}
+          style={{ backgroundColor: "rgba(84, 84, 86, 0.34)" }}
         >
           {questions[currentQuestionIndex].question}
         </div>
-  
+
         {/* Answer Options Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-x-20 sm:gap-y-6 w-full max-w-lg sm:max-w-250 xl mx-auto">
           {questions[currentQuestionIndex].options.map((option, oIndex) => (
-            <div className="h-[50px] sm:h-[65px] w-full sm:w-[460px] bg-white rounded-full border-4 border-[#59CAD3] shadow-lg shadow-black/50 flex px-4">
-              <label key={oIndex} className="flex items-center p-2 cursor-pointer w-full">
+            <div
+              key={oIndex}
+              className="h-[50px] sm:h-[65px] w-full sm:w-[460px] bg-white rounded-full border-4 border-[#59CAD3] shadow-lg shadow-black/50 flex px-4"
+            >
+              <label className="flex items-center p-2 cursor-pointer w-full">
                 <input
                   type="radio"
                   name={`question-${currentQuestionIndex}`}
                   value={oIndex}
-                  key={`question-${currentQuestionIndex}-option-${oIndex}`}
                   onChange={() => handleSelect(currentQuestionIndex, oIndex)}
                   disabled={selected}
                 />
@@ -292,11 +394,11 @@ const LevelOneDesign = () => {
           ))}
         </div>
       </div>
-  
+
       {/* Hint Button */}
       <div className="px-2 sm:px-4">
         <button
-          onClick={() => handleHint()}
+          onClick={handleHint}
           className="mt-2 py-2 px-4 bg-gradient-to-r bg-[#B3DCA5] border-4 border-[#59CAD3] text-white rounded-lg cursor-pointer w-full sm:w-auto"
         >
           Show Hint
@@ -312,19 +414,21 @@ const LevelOneDesign = () => {
         {selected && (
           <div className="mt-2 p-2 sm:p-3 md:p-4 md:w-max rounded-lg bg-gradient-to-r from-indigo-900/80 to-violet-900/80 backdrop-blur-sm border-2 border-indigo-500 text-white text-xs sm:text-sm">
             <p>
-              Correct answer: {String.fromCharCode(65 + questions[currentQuestionIndex].correct)}
+              Correct answer:{" "}
+              {String.fromCharCode(65 + questions[currentQuestionIndex].correct)}
             </p>
             <p>
-              Incorrect answers: {questions[currentQuestionIndex].options
+              Incorrect answers:{" "}
+              {questions[currentQuestionIndex].options
                 .map((_, i) => i)
-                .filter(i => i !== questions[currentQuestionIndex].correct)
-                .map(i => String.fromCharCode(65 + i))
-                .join(', ')}
+                .filter((i) => i !== questions[currentQuestionIndex].correct)
+                .map((i) => String.fromCharCode(65 + i))
+                .join(", ")}
             </p>
           </div>
         )}
       </div>
-  
+
       {/* Continue Button */}
       <div className="flex justify-center px-2 sm:px-4 mt-4">
         <button
@@ -334,17 +438,32 @@ const LevelOneDesign = () => {
           Continue
         </button>
       </div>
-  
+
       {/* Completion Popup */}
       {showPopup && (
         <div className="fixed inset-0 flex justify-center items-center bg-black/50 backdrop-blur-md p-4">
           <div className="bg-gradient-to-r from-indigo-900 to-violet-900 p-4 sm:p-6 md:p-8 rounded-lg shadow-2xl border-2 border-indigo-500 w-full max-w-xs sm:max-w-sm md:max-w-md">
-            <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-4 text-white">Quiz Completed!</h2>
-            <p className="text-base sm:text-lg md:text-xl text-indigo-200">Final Score: {score}</p>
+            <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-4 text-white">
+              Quiz Completed!
+            </h2>
+            <p className="text-base sm:text-lg text-indigo-200 mb-2">
+              Final Score: {score}
+            </p>
+            <p className="text-base sm:text-lg text-indigo-200 mb-2">
+              Highest Score: {score > highestScore ? score : highestScore}
+            </p>
+            <p className="text-base sm:text-lg text-indigo-200 mb-4">
+              Attempt: {attempts + 1}
+            </p>
+            {score > highestScore && (
+              <p className="text-base text-green-300 font-bold mb-4">
+                New high score! Congratulations!
+              </p>
+            )}
             <button
               onClick={() => {
                 setShowPopup(false);
-                window.location.href = '/';
+                navigate("/dashboard");
               }}
               className="mt-4 md:mt-6 px-3 sm:px-4 md:px-6 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-400 transition-all duration-300 cursor-pointer text-xs sm:text-sm md:text-base"
             >
@@ -355,7 +474,6 @@ const LevelOneDesign = () => {
       )}
     </div>
   );
-  
 };
 
 export default LevelOneDesign;

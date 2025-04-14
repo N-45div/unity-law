@@ -5,16 +5,13 @@ import "./index.css";
 import App from "./App.tsx";
 import { QuestionTypeProvider } from "./context/QuestionTypeContext";
 import { HighlightedTextProvider } from "./context/HighlightedTextContext"; // Import HighlightedTextProvider
-import { ScoreProvider } from "./context/ScoreContext.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <BrowserRouter>
     <StrictMode>
       <HighlightedTextProvider>
         <QuestionTypeProvider>
-          <ScoreProvider>
-            <App />
-          </ScoreProvider>
+          <App />
         </QuestionTypeProvider>
       </HighlightedTextProvider>
     </StrictMode>

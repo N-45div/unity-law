@@ -1,11 +1,5 @@
 // QuestionTypeContext.tsx
-import React, { createContext, useState, useContext, ReactNode } from "react";
-
-interface FollowUpQuestion {
-  parentQuestion: string; // The question that triggers this follow-up (e.g., "Is the Pension clause applicable?")
-  question: string; // The follow-up question (e.g., "What's the name of HR/relevant contact?")
-  visible: boolean; // Whether the follow-up question should be visible
-}
+import React, { createContext, useContext, useState, ReactNode } from "react";
 
 interface QuestionTypeContextProps {
   selectedTypes: (string | null)[];
@@ -14,21 +8,26 @@ interface QuestionTypeContextProps {
   setEditedQuestions: (questions: string[]) => void;
   requiredQuestions: boolean[];
   setRequiredQuestions: (required: boolean[]) => void;
-  followUpQuestions: FollowUpQuestion[];
-  setFollowUpQuestions: (followUps: FollowUpQuestion[]) => void;
-}
-
-interface QuestionTypeProviderProps {
-  children: ReactNode;
+  followUpQuestions: string[];
+  setFollowUpQuestions: (followUps: string[]) => void;
+  questionOrder: number[];
+  setQuestionOrder: (order: number[]) => void;
+  uniqueQuestions: string[];
+  setUniqueQuestions: (questions: string[]) => void;
+  questionTexts: string[];
+  setQuestionTexts: (texts: string[]) => void;
 }
 
 const QuestionTypeContext = createContext<QuestionTypeContextProps | undefined>(undefined);
 
-export const QuestionTypeProvider: React.FC<QuestionTypeProviderProps> = ({ children }) => {
+export const QuestionTypeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [selectedTypes, setSelectedTypes] = useState<(string | null)[]>([]);
   const [editedQuestions, setEditedQuestions] = useState<string[]>([]);
   const [requiredQuestions, setRequiredQuestions] = useState<boolean[]>([]);
-  const [followUpQuestions, setFollowUpQuestions] = useState<FollowUpQuestion[]>([]);
+  const [followUpQuestions, setFollowUpQuestions] = useState<string[]>([]);
+  const [questionOrder, setQuestionOrder] = useState<number[]>([]);
+  const [uniqueQuestions, setUniqueQuestions] = useState<string[]>([]);
+  const [questionTexts, setQuestionTexts] = useState<string[]>([]);
 
   return (
     <QuestionTypeContext.Provider
@@ -41,6 +40,12 @@ export const QuestionTypeProvider: React.FC<QuestionTypeProviderProps> = ({ chil
         setRequiredQuestions,
         followUpQuestions,
         setFollowUpQuestions,
+        questionOrder,
+        setQuestionOrder,
+        uniqueQuestions,
+        setUniqueQuestions,
+        questionTexts,
+        setQuestionTexts,
       }}
     >
       {children}
