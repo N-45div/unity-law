@@ -208,37 +208,41 @@ const Questionnaire = () => {
 
   useEffect(() => {
     console.log("highlightedTexts in Questionnaire:", highlightedTexts);
-
+  
     const processedTexts: string[] = [];
     const questionMap = new Map();
-
+  
     const isProbationaryClauseSelected = highlightedTexts.some((text) =>
       text.toLowerCase().includes("probationary period") &&
       text.includes("[Probation Period Length]") &&
       text.length > "[Probation Period Length]".length
     );
-
+  
     const isProbationLengthExplicitlySelected = highlightedTexts.includes("Probation Period Length");
-
+  
     const filteredQuestions = highlightedTexts.filter((text) => {
       const { primaryValue } = determineQuestionType(text);
       const isFollowUp = followUpQuestions.includes(primaryValue || "");
-
+  
       if (text === "Probation Period Length") {
         return true;
       }
-
+  
+      if (isProbationaryClauseSelected && text === "Is the clause of probationary period applicable?") {
+        return true; // Ensure the probation clause question is included
+      }
+  
       if (isProbationaryClauseSelected && text === "Probation Period Length" && !isProbationLengthExplicitlySelected) {
         return false;
       }
-
+  
       const shouldInclude = !isFollowUp ||
         (primaryValue === "What's the probation period length?" && text === "Probation Period Length");
       return shouldInclude;
     });
-
+  
     console.log("filteredQuestions:", filteredQuestions);
-
+  
     for (const text of filteredQuestions) {
       const { primaryValue } = determineQuestionType(text);
       console.log(`Processing text: ${text}, primaryValue: ${primaryValue}`);
@@ -247,18 +251,17 @@ const Questionnaire = () => {
         processedTexts.push(text);
       }
     }
-
+  
     console.log("processedTexts:", processedTexts);
     setUniqueQuestions(processedTexts);
     const initialRequired = initializeRequiredStatus(processedTexts);
     setRequiredQuestions(initialRequired);
-
+  
     const initialTexts = processedTexts.map(
       (text) => determineQuestionType(text).primaryValue || "No text selected"
     );
     const initialTypes = processedTexts.map((text) => {
       const { primaryValue, primaryType } = determineQuestionType(text);
-      // Default "What's the annual salary?" to "Number" type
       if (primaryValue === "What's the annual salary?") {
         return "Number";
       }
@@ -267,14 +270,14 @@ const Questionnaire = () => {
       }
       return primaryType !== "Unknown" ? primaryType : "Text";
     });
-
+  
     console.log("initialTexts (questions):", initialTexts);
     console.log("initialTypes:", initialTypes);
-
+  
     setQuestionTexts(initialTexts);
     setSelectedTypes(initialTypes);
     setEditedQuestions(initialTexts);
-
+  
     if (questionOrder.length !== processedTexts.length) {
       setQuestionOrder(processedTexts.map((_, index) => index));
     }
@@ -348,7 +351,7 @@ const Questionnaire = () => {
           : "bg-gradient-to-br from-indigo-50 via-teal-50 to-pink-50"
       }`}
     >
-      <Navbar />
+      <Navbar level={""} questionnaire={""} live_generation={""} calculations={""} />
       <div className="flex-grow flex flex-col items-center justify-center pt-24 pb-12 px-6 overflow-y-auto">
         <div className="w-full max-w-4xl">
           {filteredUniqueQuestions.length > 0 ? (
@@ -411,3 +414,8 @@ const Questionnaire = () => {
 };
 
 export default Questionnaire;
+
+
+
+
+// latest code

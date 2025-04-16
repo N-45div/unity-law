@@ -11,7 +11,7 @@ interface UserAnswers {
   [key: string]: string | boolean | { amount: string; currency: string } | undefined;
 }
 
-const processAgreement = (html: string, answers: UserAnswers, isDarkMode: boolean) => {
+const processAgreement = (html: string, answers: UserAnswers, _isDarkMode: boolean) => {
   let updatedHtml = html;
 
   // Ensure all h2 tags have !font-bold for higher specificity
@@ -40,32 +40,33 @@ const processAgreement = (html: string, answers: UserAnswers, isDarkMode: boolea
       return;
     }
 
-    // Handle Pension Clause Removal
-    if (question === "Is the Pension clause applicable?") {
-      const pensionClause = "The Employee will be enrolled in the Company's pension scheme in accordance with auto-enrolment legislation.";
-      if (answer === false) {
-        const pensionSection = updatedHtml.match(/<div>\s*<!--\s*Wrapper for each clause section\s*-->\s*<h2[^>]*>\(PENSION<\/h2>\s*<p>[\s\S]*?<\/p>\s*<\/div>/i);
-        if (pensionSection) {
-          updatedHtml = updatedHtml.replace(pensionSection[0], "");
-        }
-      } else if (answer === true) {
+    // Handle Probation Clause Insertion/Removal
+    if (question === "Is the clause of probationary period applicable?") {
+      const probationSectionRegex = /<div>\s*<!--\s*Wrapper for each clause section\s*-->\s*<h2[^>]*>\(PROBATIONARY PERIOD<\/h2>\s*<p>[\s\S]*?\(Optional Clause\)<\/span><\/p>\s*<\/div>/gi;
+      if (answer === true) {
+        const probationClause = `<div><!-- Wrapper for each clause section --><h2 className="text-2xl mt-6 !font-bold">(PROBATIONARY PERIOD</h2><p>[Probation Period Length] (Optional Clause)</p></div>`;
         updatedHtml = updatedHtml.replace(
-          pensionClause,
-          `<span class="${isDarkMode ? "text-teal-100" : "text-teal-900"}">${pensionClause}</span>`
+          /<h2 className="[^"]*">\((COMMENCEMENT OF EMPLOYMENT|JOB TITLE AND DUTIES)\)/i,
+          `$&${probationClause}`
         );
+      } else {
+        updatedHtml = updatedHtml.replace(probationSectionRegex, "");
       }
       return;
     }
 
-    // Handle Probation Clause Removal
-    if (question === "Is the clause of probationary period applicable?") {
-      if (answer === false) {
-        const probationSection = updatedHtml.match(/<div>\s*<!--\s*Wrapper for each clause section\s*-->\s*<h2[^>]*>\(PROBATIONARY PERIOD<\/h2>\s*<p>[\s\S]*?\(Optional Clause\)<\/span><\/p>\s*<\/div>/i);
-        if (probationSection) {
-          updatedHtml = updatedHtml.replace(probationSection[0], "");
-        } else {
-          console.log("Probation section not matched in Finish.tsx:", updatedHtml);
-        }
+    // Handle Pension Clause Insertion/Removal
+    if (question === "Is the Pension clause applicable?") {
+      const pensionSectionRegex = /<div>\s*<!--\s*Wrapper for each clause section\s*-->\s*<h2[^>]*>\(PENSION<\/h2>\s*<p>[\s\S]*?<\/p>\s*<\/div>/gi;
+      if (answer === true) {
+        const pensionClause = `<div><!-- Wrapper for each clause section --><h2 className="text-2xl mt-6 !font-bold">(PENSION</h2><p><span className="text-blue-600">The Employee will be enrolled in the Company's pension scheme in accordance with auto-enrolment legislation.</span></p></div>`;
+        // Updated regex to match the actual TERMINATION CLAUSE heading
+        updatedHtml = updatedHtml.replace(
+          /<h2 className="[^"]*">TERMINATION CLAUSE<\/h2>/i,
+          `${pensionClause}$&`
+        );
+      } else {
+        updatedHtml = updatedHtml.replace(pensionSectionRegex, "");
       }
       return;
     }
@@ -74,10 +75,14 @@ const processAgreement = (html: string, answers: UserAnswers, isDarkMode: boolea
     if (placeholder) {
       const escapedPlaceholder = placeholder.replace(/[.*+?^=!:${}()|\[\]\/\\]/g, "\\$&");
       if (typeof answer === "boolean") {
-        updatedHtml = updatedHtml.replace(
-          new RegExp(`\\[${escapedPlaceholder}\\]\\*`, "gi"),
-          answer ? "Yes" : "No"
-        );
+        if (!answer) {
+          updatedHtml = updatedHtml.replace(new RegExp(`.*${escapedPlaceholder}.*`, "gi"), "");
+        } else {
+          updatedHtml = updatedHtml.replace(
+            new RegExp(`\\[${escapedPlaceholder}\\]`, "gi"),
+            "Yes"
+          );
+        }
       } else if (typeof answer === "string" && answer.trim()) {
         updatedHtml = updatedHtml.replace(
           new RegExp(`\\[${escapedPlaceholder}\\]\\*`, "gi"),
@@ -275,21 +280,40 @@ const Finish = () => {
 
     const answers: UserAnswers = location.state?.userAnswers || {};
     console.log("User Answers in Finish:", answers); // Debug log
-    const updatedText = processAgreement(documentText, answers, isDarkMode);
-    setFinalAgreement(parse(updatedText, {
-      replace: (domNode: DOMNode) => {
-        if (domNode instanceof Element && domNode.attribs) {
-          const className = domNode.attribs.className || "";
-          if (className.includes("bg-white")) {
-            domNode.attribs.className = "bg-white rounded-lg shadow-sm border border-black-100 p-8";
+
+    try {
+      console.log("Raw documentText:", documentText); // Debug: Log raw documentText
+      const updatedText = processAgreement(documentText, answers, isDarkMode);
+      console.log("Updated HTML Text:", updatedText); // Debug: Log processed HTML
+
+      // Validate HTML
+      if (!updatedText || typeof updatedText !== "string") {
+        console.error("Invalid HTML: updatedText is empty or not a string");
+        setFinalAgreement(<div>Error: Invalid agreement text.</div>);
+        return;
+      }
+
+      const parsedContent = parse(updatedText, {
+        replace: (domNode: DOMNode) => {
+          if (domNode instanceof Element && domNode.attribs) {
+            const className = domNode.attribs.className || "";
+            if (className.includes("bg-white")) {
+              domNode.attribs.className = "bg-white rounded-lg shadow-sm border border-black-100 p-8";
+            }
+            if (className.includes("text-blue-600 leading-relaxed")) {
+              domNode.attribs.className = "text-blue-600 leading-relaxed space-y-6";
+            }
           }
-          if (className.includes("text-blue-600 leading-relaxed")) {
-            domNode.attribs.className = "text-blue-600 leading-relaxed space-y-6";
-          }
-        }
-        return domNode;
-      },
-    }));
+          return domNode;
+        },
+      });
+
+      console.log("Parsed Content:", parsedContent); // Debug: Log parsed content
+      setFinalAgreement(parsedContent);
+    } catch (error) {
+      console.error("Error processing agreement:", error);
+      setFinalAgreement(<div>Error: Failed to process the agreement. Please try again.</div>);
+    }
 
     setTimeout(updateDimensions, 100);
 
@@ -325,7 +349,7 @@ const Finish = () => {
           colors={["#5EEAD4", "#A78BFA", "#F9A8D4", "#FBBF24", "#60A5FA"]}
         />
       )}
-      <Navbar />
+      <Navbar level={""} questionnaire={""} live_generation={""} calculations={""} />
       <div className="flex justify-center mt-20 mb-12">
         <div
           className={`rounded-xl shadow-xl border p-12 w-4/5 max-w-5xl ${
@@ -373,8 +397,3 @@ const Finish = () => {
 };
 
 export default Finish;
-
-
-
-
-// latest code 

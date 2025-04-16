@@ -9,6 +9,8 @@ import LevelOneDesign from "../Pages/Level1_newDesign";
 import Login from "../Pages/Login";
 import Signup from "../Pages/Signup";
 import Dashboard from "../Pages/Dashboard";
+import Level3_Quiz from "../Pages/Level3Quiz";
+import Questionnaire_Level3 from "../Pages/Questionnaire_Level3";
 const AppRoutes = () => {
   return (
     <Routes>
@@ -21,6 +23,9 @@ const AppRoutes = () => {
       <Route path="/Matching-Exercise" element={<MatchingExercise data={matchingData} />} />
       <Route path="Level-Two-Part-Two" element={<LevelTwoPart_Two />} />
       <Route path="Level-One-Design" element={<LevelOneDesign />} />
+      <Route path="/Level-Three-Quiz" element={<Level3_Quiz />} />
+      <Route path="/Questionnaire_Level3" element={<Questionnaire_Level3 />} />
+
     </Routes>
   );
 };

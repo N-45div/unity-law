@@ -5,6 +5,7 @@ import { determineQuestionType, findPlaceholderByValue, textTypes, numberTypes, 
 import { documentText } from "../utils/EmploymentAgreement";
 import { useHighlightedText } from "../context/HighlightedTextContext";
 import { useQuestionType } from "../context/QuestionTypeContext";
+// import { useQuestionEditContext } from "../context/QuestionEditContext";
 import { ThemeContext } from "../context/ThemeContext";
 import parse, { DOMNode, Element } from "html-react-parser";
 import { useLocation } from 'react-router-dom';
@@ -249,7 +250,7 @@ const Live_Generation = () => {
 
     Object.entries(userAnswers).forEach(([question, answer]) => {
       console.log(`Processing question: ${question}, answer: ${answer}`);
-
+  
       if (question === "Is the clause of probationary period applicable?") {
         if (answer === true) {
           const jobTitleIndex = updatedText.indexOf('<h2 className="text-2xl font-bold mt-6">JOB TITLE AND DUTIES</h2>');
@@ -258,6 +259,12 @@ const Live_Generation = () => {
           } else {
             updatedText += probationSection;
           }
+        } else if (answer === false) {
+          // Remove the entire probationary period section
+          updatedText = updatedText.replace(
+            /<div>\s*<!--\s*Wrapper for each clause section\s*-->\s*<h2[^>]*>\(PROBATIONARY PERIOD<\/h2>\s*<p>[\s\S]*?\(Optional Clause\)<\/span><\/p>\s*<\/div>/gi,
+            ""
+          );
         }
       }
 
@@ -445,6 +452,28 @@ const Live_Generation = () => {
             updatedText = updatedText.replace(
               "[Details of Company Sick Pay Policy]",
               `<span class="${isDarkMode ? "bg-teal-600/70 text-teal-100" : "bg-teal-200/70 text-teal-900"} px-1 rounded">${userAnswers["What's the sick pay policy?"] as string}</span>`
+            );
+          }
+        } else if (question === "Is the clause of probationary period applicable?") {
+          if (answer === false) {
+            // Remove entire PROBATIONARY PERIOD section (h2 + p)
+            updatedText = updatedText.replace(
+              /<h2[^>]*>[^<]*PROBATIONARY PERIOD[^<]*<\/h2>\s*<p[^>]*>[\s\S]*?<\/p>/i,
+              ""
+            );
+          }
+        } else if (question === "Is the termination clause applicable?") {
+          if (answer === false) {
+            // Find and remove only the termination clause content while keeping the section
+            const terminationSection = updatedText.match(/<h2[^>]*>TERMINATION<\/h2>\s*<p[^>]*>([\s\S]*?)<\/p>/i);
+            if (terminationSection) {
+              const sectionWithoutClause = terminationSection[0].replace(/\(After the probationary period.*?gross misconduct\.\)/, '');
+              updatedText = updatedText.replace(terminationSection[0], sectionWithoutClause);
+            }
+          } else if (answer === true && userAnswers["What's the notice period?"]) {
+            updatedText = updatedText.replace(
+              /\[Notice Period\]/gi,
+              `<span class="${isDarkMode ? "bg-teal-600/70 text-teal-100" : "bg-teal-200/70 text-teal-900"} px-1 rounded">${userAnswers["What's the notice period?"] as string}</span>`
             );
           }
         } else if (question === "Is the previous service applicable?" && answer === false) {

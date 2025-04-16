@@ -3,7 +3,15 @@ import { useNavigate, useLocation } from "react-router";
 import { FaTools, FaSun, FaMoon } from "react-icons/fa";
 import { ThemeContext } from "../context/ThemeContext";
 
-const Navbar = () => {
+// Define the props interface
+interface NavbarProps {
+  level?: string;
+  questionnaire?: string;
+  live_generation?: string;
+  calculations?: string;
+}
+
+const Navbar = ({ level, questionnaire, live_generation, calculations }: NavbarProps) => {
   const { isDarkMode, toggleDarkMode } = useContext(ThemeContext);
   const location = useLocation();
   const navigation = useNavigate();
@@ -17,19 +25,25 @@ const Navbar = () => {
       "/Live_Generation": "Live Document Generation",
       "/Live_Generation_2": "Live Document Generation",
       "/Finish": "Generated Document",
+      // Add custom routes from props if provided
+      ...(level && { [level]: "Document" }),
+      ...(questionnaire && { [questionnaire]: "Questionnaire" }),
+      ...(live_generation && { [live_generation]: "Live Document Generation" }),
+      ...(calculations && { [calculations]: "Calculations" }),
     };
 
     const activeLabel = routes[location.pathname] || null;
     console.log("Current pathname:", location.pathname, "Active label:", activeLabel);
     setActiveButton(activeLabel);
-  }, [location.pathname]);
+  }, [location.pathname, level, questionnaire, live_generation, calculations]);
 
   const handlePageChange = (label: string) => {
     const routes: Record<string, string> = {
-      Document: "/Level-Two-Part-Two",
-      Questionnaire: "/Questionnaire",
-      "Live Document Generation": "/Live_Generation",
+      Document: level || "/Level-Two-Part-Two",
+      Questionnaire: questionnaire || "/Questionnaire",
+      "Live Document Generation": live_generation || "/Live_Generation",
       "Generated Document": "/Finish",
+      Calculations: calculations || "/Calculations",
     };
 
     const path = routes[label];
@@ -49,17 +63,19 @@ const Navbar = () => {
         <div className="flex items-center justify-between">
           <div className="flex-1 flex">
             {location.pathname !== "/Finish" ? (
-              ["Document", "Questionnaire", "Live Document Generation"].map((label,idx) => (
+              ["Document", "Questionnaire", "Live Document Generation", "Calculations"].map((label, idx) => (
                 <button
-                id={
-                  idx === 1
-                    ? "Questionnaire-button"
-                    : idx === 2
-                    ? "live-document-generation"
-                    : idx === 0
-                    ? "document-page"
-                    : undefined
-                }
+                  id={
+                    idx === 1
+                      ? "Questionnaire-button"
+                      : idx === 2
+                      ? "live-document-generation"
+                      : idx === 0
+                      ? "document-page"
+                      : idx === 3
+                      ? "calculations-page"
+                      : undefined
+                  }
                   key={label}
                   className={`px-8 py-3 cursor-pointer font-medium border-r border-lime-400 transition-colors duration-200 flex items-center space-x-2 ${
                     activeButton === label
@@ -117,9 +133,9 @@ const Navbar = () => {
             </div>
             <button
               onClick={toggleDarkMode}
-              className={`p-2  relative   left-[12vw]  rounded-full shadow-md transition-all duration-300 transform hover:scale-110 ${
+              className={`p-2 relative left-[12vw] rounded-full shadow-md transition-all duration-300 transform hover:scale-110 ${
                 isDarkMode
-                  ? "bg-gray-600 text-yellow-400 hover:bg-gray-100 "
+                  ? "bg-gray-600 text-yellow-400 hover:bg-gray-100"
                   : "bg-lime-900 text-white hover:bg-black"
               } flex items-center justify-center text-xl`}
               aria-label={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}

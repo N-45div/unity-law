@@ -27,7 +27,7 @@ export const documentText = `
                   
               </p>
           </div>
-          <div> <!-- Wrapper for each clause section -->
+         <div> <!-- Wrapper for each clause section -->
               <h2 className="text-2xl font-bold mt-6">(PROBATIONARY PERIOD</h2><p>The first [Probation Period Length]* months of employment will be a probationary period. The Company shall assess the Employee’s performance and suitability during this time. Upon successful completion, the Employee will be confirmed in their role. ){" "}<span className="text-black font-bold">(Optional Clause)</span></p>
           </div>
           <div> <!-- Wrapper for each clause section -->
@@ -74,12 +74,7 @@ export const documentText = `
                 If the Employee is unable to work due to illness, they must notify the Company as soon as possible. Statutory Sick Pay (SSP) will be paid in accordance with government regulations. {The Employee may also be entitled to Company sick pay.}
               </p>
           </div>
-          <div> <!-- Wrapper for each clause section -->
-              <h2 className="text-2xl font-bold mt-6">(PENSION</h2>
-              <p>
-                  The Employee will be enrolled in the Company’s pension scheme in accordance with auto-enrolment legislation.)
-              </p>
-          </div>
+          
           <div> <!-- Wrapper for each clause section -->
               <h2 className="text-2xl font-bold mt-6">TERMINATION CLAUSE</h2>
               <p>
