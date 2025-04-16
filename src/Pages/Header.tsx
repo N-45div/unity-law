@@ -14,13 +14,13 @@ const Header: React.FC<HeaderProps> = ({ isDarkMode }) => {
         }`}>
           CLM Training
         </span>
-        <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
+        {/* <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
           isDarkMode 
             ? "bg-teal-800/70 text-teal-200" 
             : "bg-teal-100 text-teal-800"
         }`}>
           Beta
-        </span>
+        </span> */}
       </div>
       
       {/* Desktop Navigation Links - only visible on desktop */}

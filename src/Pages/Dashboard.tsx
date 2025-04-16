@@ -6,7 +6,8 @@ import {
   FaRegLightbulb,
   FaPuzzlePiece,
   FaSignOutAlt,
-  FaUser
+  FaUser,
+  FaLock
 } from "react-icons/fa";
 import { GrDocumentConfig } from "react-icons/gr";
 import { GiLevelThreeAdvanced } from "react-icons/gi";
@@ -25,16 +26,77 @@ interface LevelProps {
   onClick: () => void;
   link: string;
   isLevel2?: boolean;
+  locked?: boolean;
 }
 
 interface CustomDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelectPart: (part: string, isDemo?: boolean) => void; // Add isDemo param
+  onSelectPart: (part: string, isDemo?: boolean) => void;
   isDarkMode: boolean;
 }
 
-// Logout confirmation dialog component
+interface LockDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  isDarkMode: boolean;
+}
+
+const LockDialog: React.FC<LockDialogProps> = ({
+  isOpen,
+  onClose,
+  isDarkMode,
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
+      <div 
+        className={`rounded-2xl w-full max-w-md mx-4 transform transition-all duration-300 ease-out animate-scale-in ${
+          isDarkMode ? "bg-gray-900" : "bg-white"
+        }`}
+        style={{
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+        }}
+      >
+        <div className={`p-6 border-b ${isDarkMode ? "border-gray-800" : "border-gray-100"}`}>
+          <div className="flex justify-between items-center">
+            <h3 className={`text-2xl font-bold ${isDarkMode ? "text-gray-100" : "text-gray-800"}`}>
+              Locked Level
+            </h3>
+            <button
+              onClick={onClose}
+              className={`p-2 rounded-full transition-colors duration-200 ${
+                isDarkMode ? "hover:bg-gray-800" : "hover:bg-gray-100"
+              }`}
+              aria-label="Close dialog"
+            >
+              <FaTimes className={`${isDarkMode ? "text-gray-300 hover:text-gray-100" : "text-gray-400 hover:text-gray-600"} text-xl`} />
+            </button>
+          </div>
+        </div>
+        <div className="p-6">
+          <p className={`${isDarkMode ? "text-gray-300" : "text-gray-600"} mb-6`}>
+            This level will be available starting May 1, 2025. Please come back later!
+          </p>
+          <div className="flex justify-end">
+            <button
+              onClick={onClose}
+              className={`px-4 py-2 rounded-lg transition-all duration-200 ${
+                isDarkMode 
+                  ? "bg-gray-800 text-gray-300 hover:bg-gray-700" 
+                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+              }`}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 interface LogoutDialogProps {
   isOpen: boolean;
   onClose: () => void;
@@ -60,7 +122,6 @@ const LogoutDialog: React.FC<LogoutDialogProps> = ({
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
         }}
       >
-        {/* Header */}
         <div className={`p-6 border-b ${isDarkMode ? "border-gray-800" : "border-gray-100"}`}>
           <div className="flex justify-between items-center">
             <h3 className={`text-2xl font-bold ${isDarkMode ? "text-gray-100" : "text-gray-800"}`}>
@@ -77,13 +138,10 @@ const LogoutDialog: React.FC<LogoutDialogProps> = ({
             </button>
           </div>
         </div>
-
-        {/* Content */}
         <div className="p-6">
           <p className={`${isDarkMode ? "text-gray-300" : "text-gray-600"} mb-6`}>
             Are you sure you want to log out of your account?
           </p>
-          
           <div className="flex justify-end space-x-4">
             <button
               onClick={onClose}
@@ -126,7 +184,6 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
         }}
       >
-        {/* Header */}
         <div className={`p-6 border-b ${isDarkMode ? "border-gray-800" : "border-gray-100"}`}>
           <div className="flex justify-between items-center">
             <h3 className={`text-2xl font-bold ${isDarkMode ? "text-gray-100" : "text-gray-800"}`}>
@@ -146,11 +203,8 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
             Select which part you'd like to explore
           </p>
         </div>
-
-        {/* Content */}
         <div className="p-6">
           <div className="grid grid-cols-1 gap-4">
-            {/* Part One Button */}
             <button
               onClick={() => onSelectPart("one")}
               className={`group relative flex items-center p-4 rounded-xl transition-all duration-300 ${
@@ -175,11 +229,8 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
                 isDarkMode ? "text-blue-400 group-hover:text-blue-300" : "text-blue-400 group-hover:text-blue-600"
               } group-hover:transform group-hover:translate-x-1 transition-all`} />
             </button>
-
-                {/* Part two [Demo Button] */}
-
             <button
-              onClick={() => onSelectPart("two" , true)} // Add isDemo=true
+              onClick={() => onSelectPart("two", true)}
               className={`group relative flex items-center p-4 rounded-xl transition-all duration-300 ${
                 isDarkMode
                   ? "bg-gradient-to-r from-green-900/50 to-lime-800/50 hover:from-green-800 hover:to-lime-700"
@@ -201,8 +252,6 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
                 isDarkMode ? "text-lime-400 group-hover:text-lime-300" : "text-lime-400 group-hover:text-lime-600"
               } group-hover:transform group-hover:translate-x-1 transition-all`} />
             </button>
-            
-            {/* Part Two Button */}
             <button
               onClick={() => onSelectPart("two", true)}
               className={`group relative flex items-center p-4 rounded-xl transition-all duration-300 ${
@@ -229,8 +278,6 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
             </button>
           </div>
         </div>
-
-        {/* Footer */}
         <div className={`p-6 rounded-b-2xl ${isDarkMode ? "bg-gray-800" : "bg-gray-50"}`}>
           <p className={`text-sm text-center ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
             You can always switch between parts later
@@ -249,40 +296,46 @@ const LevelCard: React.FC<LevelProps & { isDarkMode: boolean }> = ({
   onClick,
   link,
   isLevel2,
+  locked,
   isDarkMode,
 }) => {
   const navigate = useNavigate();
   const [showDialog, setShowDialog] = useState(false);
+  const [showLockDialog, setShowLockDialog] = useState(false);
 
   const handleStartLevel = (e: React.MouseEvent) => {
     e.preventDefault();
-    e.stopPropagation(); // Prevent triggering parent onClick
-    if (isLevel2) {
+    e.stopPropagation();
+    if (locked) {
+      setShowLockDialog(true);
+    } else if (isLevel2) {
       setShowDialog(true);
     } else {
       navigate(link);
     }
   };
 
- const handleSelectPart = (part: string, isDemo?: boolean) => {
-  setShowDialog(false);
-  if (part === "one") {
-    navigate("/Level-Two-Part-One");
-  } else {
-    navigate("/Level-Two-Part-Two", { 
-      state: { 
-        startTour: isDemo || false // Pass demo state
-      } 
-    });
-  }
-};
+  const handleSelectPart = (part: string, isDemo?: boolean) => {
+    setShowDialog(false);
+    if (part === "one") {
+      navigate("/Level-Two-Part-One");
+    } else {
+      navigate("/Level-Two-Part-Two", { 
+        state: { 
+          startTour: isDemo || false 
+        } 
+      });
+    }
+  };
 
   return (
     <>
       <div
         className={`p-6 rounded-2xl transition-all duration-300 cursor-pointer shadow-lg hover:shadow-xl relative 
           ${
-            isDarkMode
+            locked
+              ? "bg-gray-200/50 cursor-not-allowed"
+              : isDarkMode
               ? `bg-gradient-to-r ${
                   active
                     ? "from-teal-900/50 to-lime-900/50 border-2 border-teal-700/50"
@@ -294,20 +347,27 @@ const LevelCard: React.FC<LevelProps & { isDarkMode: boolean }> = ({
                     : "from-teal-100/50 to-lime-100/50 border border-teal-200/50"
                 } hover:from-teal-100/70 hover:to-lime-100/70`
           }`}
-        onClick={onClick}
+        onClick={locked ? () => setShowLockDialog(true) : onClick}
         role="button"
-        tabIndex={0}
+        tabIndex={locked ? -1 : 0}
         aria-pressed={active}
         onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
+          if (!locked && (e.key === 'Enter' || e.key === ' ')) {
             onClick();
           }
         }}
       >
+        {locked && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-2xl">
+            <FaLock className="text-white text-4xl" />
+          </div>
+        )}
         <div className="flex items-center gap-3 mb-3">
           <div
             className={`p-2 rounded-lg shadow-md ${
-              isDarkMode
+              locked
+                ? "bg-gray-400"
+                : isDarkMode
                 ? active
                   ? "bg-gradient-to-br from-teal-700 to-lime-800 text-white"
                   : "bg-gradient-to-br from-teal-800 to-lime-700"
@@ -320,7 +380,9 @@ const LevelCard: React.FC<LevelProps & { isDarkMode: boolean }> = ({
           </div>
           <h3
             className={`font-semibold text-lg ${
-              isDarkMode
+              locked
+                ? "text-gray-500"
+                : isDarkMode
                 ? active
                   ? "text-teal-300"
                   : "text-gray-200"
@@ -334,7 +396,9 @@ const LevelCard: React.FC<LevelProps & { isDarkMode: boolean }> = ({
         </div>
         <p
           className={`text-sm leading-relaxed ${
-            isDarkMode
+            locked
+              ? "text-gray-500"
+              : isDarkMode
               ? active
                 ? "text-gray-300"
                 : "text-gray-400"
@@ -345,7 +409,7 @@ const LevelCard: React.FC<LevelProps & { isDarkMode: boolean }> = ({
         >
           {description}
         </p>
-        {active && (
+        {!locked && active && (
           <div className="flex justify-center mt-4">
             <button
               onClick={handleStartLevel}
@@ -361,18 +425,21 @@ const LevelCard: React.FC<LevelProps & { isDarkMode: boolean }> = ({
           </div>
         )}
       </div>
-
       <CustomDialog
         isOpen={showDialog}
         onClose={() => setShowDialog(false)}
         onSelectPart={handleSelectPart}
         isDarkMode={isDarkMode}
       />
+      <LockDialog
+        isOpen={showLockDialog}
+        onClose={() => setShowLockDialog(false)}
+        isDarkMode={isDarkMode}
+      />
     </>
   );
 };
 
-// Define levels data outside the component to avoid recreation on each render
 const levelsData = [
   {
     title: "Simple Quiz",
@@ -388,6 +455,7 @@ const levelsData = [
     Icon: GrDocumentConfig,
     link: "/Level-Two",
     isLevel2: true,
+    locked: true,
   },
   {
     title: "Advanced Document Automation",
@@ -395,6 +463,7 @@ const levelsData = [
       "Dive deeper into automating complex documents with advanced techniques and logic.",
     Icon: GiLevelThreeAdvanced,
     link: "/Level-Three-Quiz",
+    locked: true,
   },
   {
     title: "CLM Workflows",
@@ -402,6 +471,7 @@ const levelsData = [
       "Explore contract lifecycle management by designing and optimizing real-world workflows.",
     Icon: LuBrain,
     link: "/Level-Four-Quiz",
+    locked: true,
   },
 ];
 
@@ -414,13 +484,10 @@ const Dashboard: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const levels = useMemo(() => levelsData, []);
 
-  // Load dark mode preference from localStorage
   useEffect(() => {
-    // Check for user's preferred color scheme
     const prefersDarkMode = window.matchMedia && 
       window.matchMedia('(prefers-color-scheme: dark)').matches;
     
-    // First check localStorage, then fallback to system preference
     const savedDarkMode = localStorage.getItem('darkMode');
     const initialDarkMode = savedDarkMode !== null 
       ? savedDarkMode === 'true' 
@@ -428,21 +495,16 @@ const Dashboard: React.FC = () => {
       
     setIsDarkMode(initialDarkMode);
     
-    // Get user info from auth
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
-        // Use displayName if available, otherwise fallback to the first part of the email or 'User'
         setUserName(user.displayName || user.email?.split('@')[0] || 'User');
       } else {
-        // If no user is logged in, redirect to login
         navigate('/login');
       }
     });
     
-    // Listen for system color scheme changes
     const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleColorSchemeChange = (e: MediaQueryListEvent) => {
-      // Only update if user hasn't set a preference in localStorage
       if (localStorage.getItem('darkMode') === null) {
         setIsDarkMode(e.matches);
       }
@@ -452,7 +514,6 @@ const Dashboard: React.FC = () => {
       darkModeMediaQuery.addEventListener('change', handleColorSchemeChange);
     }
     
-    // Close mobile menu when window is resized to desktop size
     const handleResize = () => {
       if (window.innerWidth >= 768 && isMenuOpen) {
         setIsMenuOpen(false);
@@ -471,7 +532,9 @@ const Dashboard: React.FC = () => {
   }, [navigate, isMenuOpen]);
 
   const handleLevelClick = (index: number) => {
-    setActiveIndex(index === activeIndex ? null : index);
+    if (!levels[index].locked) {
+      setActiveIndex(index === activeIndex ? null : index);
+    }
   };
 
   const toggleDarkMode = () => {
@@ -504,7 +567,6 @@ const Dashboard: React.FC = () => {
           : "bg-gradient-to-br from-yellow-100 via-blue-100 to-lime-100"
       }`}
     >
-      {/* Improved Navbar */}
       <nav 
         className={`w-full transition-all duration-300 fixed top-0 left-0 z-40 ${
           isDarkMode ? "bg-gray-900/90" : "bg-white/90"
@@ -514,14 +576,10 @@ const Dashboard: React.FC = () => {
       >
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex justify-between items-center h-16">
-            {/* Logo and Brand */}
             <div className="flex-shrink-0 flex items-center">
               <Header isDarkMode={isDarkMode} />
             </div>
-            
-            {/* Desktop Menu */}
             <div className="hidden md:flex items-center justify-end space-x-4 lg:space-x-6">
-              {/* User Profile - Desktop */}
               {userName && (
                 <div className="flex items-center space-x-2 px-2">
                   <div className={`flex items-center justify-center h-8 w-8 rounded-full ${
@@ -538,8 +596,6 @@ const Dashboard: React.FC = () => {
                   </span>
                 </div>
               )}
-              
-              {/* Theme Toggle - Desktop */}
               <button
                 onClick={toggleDarkMode}
                 className={`p-2 rounded-full shadow-md transition-all duration-300 ${
@@ -556,8 +612,6 @@ const Dashboard: React.FC = () => {
                   <BsMoonStarsFill className="text-lg" />
                 )}
               </button>
-              
-              {/* Logout Button - Desktop */}
               <button
                 onClick={() => setShowLogoutDialog(true)}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg shadow-md transition-all duration-300 bg-gradient-to-r from-rose-500 to-red-500 text-white hover:shadow-lg hover:from-rose-600 hover:to-red-600 transform hover:translate-y-px"
@@ -568,10 +622,7 @@ const Dashboard: React.FC = () => {
                 <span>Logout</span>
               </button>
             </div>
-            
-            {/* Mobile menu button */}
             <div className="md:hidden flex items-center space-x-2">
-              {/* Theme Toggle - Small Mobile */}
               <button
                 onClick={toggleDarkMode}
                 className={`p-2 rounded-full shadow-md transition-all duration-300 ${
@@ -587,8 +638,6 @@ const Dashboard: React.FC = () => {
                   <BsMoonStarsFill className="text-sm" />
                 )}
               </button>
-
-              {/* Logout Button - Small Mobile */}
               <button
                 onClick={() => setShowLogoutDialog(true)}
                 className={`p-2 rounded-full shadow-md transition-all duration-300 ${
@@ -600,7 +649,6 @@ const Dashboard: React.FC = () => {
               >
                 <FaSignOutAlt className="text-sm" />
               </button>
-
               <button
                 onClick={toggleMenu}
                 className={`p-2 rounded-md ${
@@ -627,8 +675,6 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         </div>
-        
-        {/* Mobile Menu */}
         <div 
           className={`transition-all duration-300 ease-in-out overflow-hidden md:hidden ${
             isMenuOpen ? "max-h-64 opacity-100 pb-4" : "max-h-0 opacity-0"
@@ -636,7 +682,6 @@ const Dashboard: React.FC = () => {
           aria-hidden={!isMenuOpen}
         >
           <div className="px-4 py-3 space-y-4">
-            {/* User Profile - Mobile */}
             {userName && (
               <div className={`flex items-center space-x-3 py-2 px-3 rounded-lg ${
                 isDarkMode ? "bg-gray-800/70" : "bg-gray-100/70"
@@ -655,8 +700,6 @@ const Dashboard: React.FC = () => {
                 </span>
               </div>
             )}
-
-            {/* Navigation Links - Mobile */}
             <div className="space-y-2">
               <a
                 href="#"
@@ -699,8 +742,6 @@ const Dashboard: React.FC = () => {
                 Resources
               </a>
             </div>
-
-            {/* Logout Button - Mobile */}
             <button
               onClick={() => setShowLogoutDialog(true)}
               className="flex items-center justify-center gap-2 px-4 py-3 w-full rounded-lg shadow-md transition-all duration-300 bg-gradient-to-r from-rose-500 to-red-500 text-white hover:from-rose-600 hover:to-red-600"
@@ -711,8 +752,6 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       </nav>
-
-      {/* Main content */}
       <div className="w-full max-w-7xl mx-auto py-24 pt-24 sm:pt-28 md:pt-32 px-4 sm:px-6 lg:px-8 relative">
         <div
           className={`p-4 sm:p-6 md:p-8 rounded-3xl shadow-xl ${
@@ -744,8 +783,6 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Logout confirmation dialog */}
       <LogoutDialog
         isOpen={showLogoutDialog}
         onClose={() => setShowLogoutDialog(false)}
