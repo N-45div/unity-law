@@ -383,6 +383,7 @@ const LevelOneDesign = () => {
                   type="radio"
                   name={`question-${currentQuestionIndex}`}
                   value={oIndex}
+                  key={`question-${currentQuestionIndex}-option-${oIndex}`}
                   onChange={() => handleSelect(currentQuestionIndex, oIndex)}
                   disabled={selected}
                 />
@@ -398,7 +399,7 @@ const LevelOneDesign = () => {
       {/* Hint Button */}
       <div className="px-2 sm:px-4">
         <button
-          onClick={handleHint}
+       onClick={() => handleHint()}
           className="mt-2 py-2 px-4 bg-gradient-to-r bg-[#B3DCA5] border-4 border-[#59CAD3] text-white rounded-lg cursor-pointer w-full sm:w-auto"
         >
           Show Hint
