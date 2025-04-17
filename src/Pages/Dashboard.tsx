@@ -176,10 +176,9 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
               } group-hover:transform group-hover:translate-x-1 transition-all`} />
             </button>
 
-                {/* Part two [Demo Button] */}
-
+            {/* Part Two [Demo] Button */}
             <button
-              onClick={() => onSelectPart("two" , true)} // Add isDemo=true
+              onClick={() => onSelectPart("two", true)}
               className={`group relative flex items-center p-4 rounded-xl transition-all duration-300 ${
                 isDarkMode
                   ? "bg-gradient-to-r from-green-900/50 to-lime-800/50 hover:from-green-800 hover:to-lime-700"
@@ -204,7 +203,7 @@ const CustomDialog: React.FC<CustomDialogProps> = ({
             
             {/* Part Two Button */}
             <button
-              onClick={() => onSelectPart("two", true)}
+              onClick={() => onSelectPart("two")}
               className={`group relative flex items-center p-4 rounded-xl transition-all duration-300 ${
                 isDarkMode
                   ? "bg-gradient-to-r from-green-900/50 to-lime-800/50 hover:from-green-800 hover:to-lime-700"
@@ -271,7 +270,7 @@ const LevelCard: React.FC<LevelProps & { isDarkMode: boolean }> = ({
   } else {
     navigate("/Level-Two-Part-Two", { 
       state: { 
-        startTour: isDemo || false // Pass demo state
+        startTour: isDemo || false 
       } 
     });
   }
@@ -757,10 +756,3 @@ const Dashboard: React.FC = () => {
 };
 
 export default Dashboard;
-
-
-
-// Original code
-
-
-
