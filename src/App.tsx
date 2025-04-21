@@ -7,6 +7,7 @@ import LevelTwoPart_Two from "./Pages/Level2_PartTwo";
 import LevelOneDesign from "./Pages/Level1_newDesign";
 import Questionnaire from "./Pages/Questionnaire";
 import Live_Generation from "./Pages/Live_Generation";
+import Live_Generation_2 from "./Pages/Live_Generation_2";
 import Finish from "./Pages/Finish";
 import { HighlightedTextProvider } from "./context/HighlightedTextContext";
 import { QuestionTypeProvider } from "./context/QuestionTypeContext";
@@ -71,6 +72,7 @@ const AppRoutes = () => {
       <Route path="/Questionnaire" element={<ProtectedRoute><Questionnaire /></ProtectedRoute>} />
       <Route path="/Calculations" element={<Calculations />} />
       <Route path="/Live_Generation" element={<ProtectedRoute><Live_Generation /></ProtectedRoute>} />
+      <Route path="/Live_Generation_2" element={<ProtectedRoute><Live_Generation_2 /></ProtectedRoute>} />
       <Route path="/Level-One-Design" element={<ProtectedRoute><LevelOneDesign /></ProtectedRoute>} />
       <Route path="/Finish" element={<ProtectedRoute><Finish /></ProtectedRoute>} />
     </Routes>
