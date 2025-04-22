@@ -6,6 +6,101 @@ import { documentText } from "../utils/EmploymentAgreement";
 import { useHighlightedText } from "../context/HighlightedTextContext";
 import { useQuestionType } from "../context/QuestionTypeContext";
 import { ThemeContext } from "../context/ThemeContext";
+import { useScore } from "../context/ScoreContext";
+
+interface WarningAlertProps {
+  message: string;
+  isVisible: boolean;
+  isDarkMode: boolean;
+}
+
+const WarningAlert: React.FC<WarningAlertProps> = ({ message, isVisible, isDarkMode }) => {
+  if (!isVisible) return null;
+
+  return (
+    <div
+      className={`fixed top-20 right-6 p-4 rounded-xl shadow-md transition-opacity duration-500 z-50 ${
+        isDarkMode
+          ? "bg-gradient-to-r from-red-800 to-red-900 border-l-4 border-red-500 text-red-200"
+          : "bg-gradient-to-r from-red-100 to-red-200 border-l-4 border-red-400 text-red-800"
+      } animate-fadeIn`}
+    >
+      <p className="font-bold">Warning</p>
+      <p className="text-sm">{message}</p>
+    </div>
+  );
+};
+
+interface CertificationPopupProps {
+  message: string;
+  isVisible: boolean;
+  isDarkMode: boolean;
+  onContinue: () => void;
+  onReplay: () => void;
+  score: number;
+}
+
+const CertificationPopup: React.FC<CertificationPopupProps> = ({ 
+  message, 
+  isVisible, 
+  isDarkMode, 
+  onContinue,
+  onReplay,
+  score
+}) => {
+  if (!isVisible) return null;
+
+  // Determine button configuration based on score
+  const isExcellent = score > 151;
+  const isFailed = score < 40;
+  const isIntermediate = !isExcellent && !isFailed;
+
+  return (
+    <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50">
+      <div className={`p-6 rounded-xl shadow-lg max-w-md w-full mx-4 ${
+        isDarkMode 
+          ? "bg-gradient-to-br from-gray-700 to-gray-800 border border-gray-600" 
+          : "bg-gradient-to-br from-white to-gray-100 border border-gray-200"
+      }`}>
+        <h3 className={`text-2xl font-bold mb-4 ${
+          isDarkMode ? "text-teal-300" : "text-teal-700"
+        }`}>
+          {isFailed ? "Results" : "🎉 Congratulations!"}
+        </h3>
+        <p className={`mb-6 ${isDarkMode ? "text-gray-200" : "text-gray-700"}`}>
+          {message}
+        </p>
+        <div className={`flex ${isIntermediate ? "justify-between" : "justify-end"}`}>
+          {(isFailed || isIntermediate) && (
+            <button
+              onClick={onReplay}
+              className={`px-4 py-2 rounded-lg ${
+                isDarkMode
+                  ? "bg-gray-500 hover:bg-gray-600 text-white"
+                  : "bg-gray-500 hover:bg-gray-600 text-white"
+              } transition-colors duration-200`}
+            >
+              Replay
+            </button>
+          )}
+          
+          {(isExcellent || isIntermediate) && (
+            <button
+              onClick={onContinue}
+              className={`px-4 py-2 rounded-lg ${
+                isDarkMode
+                  ? "bg-teal-600 hover:bg-teal-700 text-white"
+                  : "bg-teal-500 hover:bg-teal-600 text-white"
+              } transition-colors duration-200`}
+            >
+              Continue to Document
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // const extractClauses = (documentText: string) => {
 //   const sections = documentText.split("<h2");
@@ -62,16 +157,21 @@ const Live_Generation_2 = () => {
   const { isDarkMode } = useContext(ThemeContext);
   const navigate = useNavigate();
   const { highlightedTexts } = useHighlightedText();
-  const { selectedTypes, setSelectedTypes, editedQuestions, setEditedQuestions } = useQuestionType();
+  const { selectedTypes, setSelectedTypes, editedQuestions, setEditedQuestions, requiredQuestions } = useQuestionType();
   // const [questionClauseMap, setQuestionClauseMap] = useState<{ [key: string]: string[] }>({});
   const [userAnswers, setUserAnswers] = useState<{ [key: string]: string | boolean }>(initializeUserAnswers(highlightedTexts, selectedTypes));
   // const [skippedQuestions, setSkippedQuestions] = useState<string[]>([]);
   const [agreement, setAgreement] = useState<string>(documentText);
   const [inputErrors, setInputErrors] = useState<{ [key: string]: string }>({});
+  const [showWarning, setShowWarning] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [additionalLocations, setAdditionalLocations] = useState<string[]>([]);
   const [locations] = useState<string[]>([]);
   
+  const { totalScore } = useScore();
+  const [showCertificationPopup, setShowCertificationPopup] = useState(false);
+  const [certificationMessage, setCertificationMessage] = useState("");
+  const [isCertified, setIsCertified] = useState(false);
 
   useEffect(() => {
     const processedTexts: string[] = [];
@@ -102,9 +202,6 @@ const Live_Generation_2 = () => {
     console.log("selected types: ", selectedTypes);
     console.log("edited questions: ", editedQuestions);
   }, [editedQuestions, selectedTypes]);
-
-
-
 
   function initializeUserAnswers(highlightedTexts: string[], selectedTypes: (string | null)[]): { [key: string]: string | boolean } {
     const initialAnswers: { [key: string]: string | boolean } = {};
@@ -168,7 +265,6 @@ const Live_Generation_2 = () => {
     Object.entries(userAnswers).forEach(([question, answer]) => {
       const placeholder = findPlaceholderByValue(question);
 
-      // Handles calculations
       if (placeholder === "Unused Holiday Days" && typeof(answer) === "string") {
         console.log("here");
         const storedOperationType = localStorage.getItem("operationType");
@@ -206,7 +302,7 @@ const Live_Generation_2 = () => {
           `<span class="${isDarkMode ? "bg-teal-600/70 text-teal-100" : "bg-teal-200/70 text-teal-900"} px-1 rounded">${calculatedValue}</span>`
         );
       }
-      // If it's a placeholder field (not a radio button question)
+
       if (placeholder) {
         const escapedPlaceholder = placeholder.replace(/[.*+?^=!:${}()|\[\]\/\\]/g, "\\$&");
         if (typeof answer === "boolean") {
@@ -224,14 +320,12 @@ const Live_Generation_2 = () => {
             `<span class="${isDarkMode ? "bg-teal-600/70 text-teal-100" : "bg-teal-200/70 text-teal-900"} px-1 rounded">${answer}</span>`
           );
         } else {
-          // Keep the placeholder as is if no answer
           updatedText = updatedText.replace(
             new RegExp(`\\[${escapedPlaceholder}\\]`, "gi"),
             `[${placeholder}]`
           );
         }
       } else {
-        // Handle radio button questions (which can affect section visibility)
         if (question === "Is the sick pay policy applicable?") {
           const sickPayClause = "{The Employee may also be entitled to Company sick pay of [Details of Company Sick Pay Policy]}";
           if (answer === false) {
@@ -244,7 +338,6 @@ const Live_Generation_2 = () => {
           }
         } else if (question === "Is the clause of probationary period applicable?") {
           if (answer === false) {
-            // Find and remove only the probation clause content while keeping the section
             const probationSection = updatedText.match(/<h2[^>]*>PROBATIONARY PERIOD<\/h2>\s*<p[^>]*>([\s\S]*?)<\/p>/i);
             if (probationSection) {
               const sectionWithoutClause = probationSection[0].replace(/\(The first.*?confirmed in their role\.\)/, '');
@@ -253,7 +346,6 @@ const Live_Generation_2 = () => {
           }
         } else if (question === "Is the termination clause applicable?") {
           if (answer === false) {
-            // Find and remove only the termination clause content while keeping the section
             const terminationSection = updatedText.match(/<h2[^>]*>TERMINATION<\/h2>\s*<p[^>]*>([\s\S]*?)<\/p>/i);
             if (terminationSection) {
               const sectionWithoutClause = terminationSection[0].replace(/\(After the probationary period.*?gross misconduct\.\)/, '');
@@ -329,12 +421,10 @@ const Live_Generation_2 = () => {
         }));
       }
   
-      // For radio buttons, use the boolean value directly
       const finalValue = currentType === "Radio" ? Boolean(value) : value;
   
       if (isAdditional && locationNum !== undefined) {
         setUserAnswers((prev) => {
-          // Create a safe string value to work with
           const currentValue = prev[primaryValue];
           let stringValue = "";
           
@@ -344,7 +434,6 @@ const Live_Generation_2 = () => {
             stringValue = currentValue.toString();
           }
           
-          // Now safely split the string
           let values = stringValue
             .split(/\s*,\s*|\s*and\s*|\s*, and\s*/)
             .filter(Boolean);
@@ -382,7 +471,6 @@ const Live_Generation_2 = () => {
     [highlightedTexts, selectedTypes]
   );
   
-  
   const handleAddMore = () => {
     setAdditionalLocations((prevLocations) => [...prevLocations, ""]);
   };
@@ -390,10 +478,59 @@ const Live_Generation_2 = () => {
   const handleLocationChange = (index: number, value: string) => {
     setAdditionalLocations((prevLocations) => {
       const updatedLocations = [...prevLocations];
-      updatedLocations[index] = value; // Update the specific location at the given index
+      updatedLocations[index] = value;
       return updatedLocations;
     });
-    console.log(additionalLocations);
+  };
+
+  const areAllRequiredAnswered = () => {
+    for (let index = 0; index < highlightedTexts.length; index++) {
+      const { primaryValue } = determineQuestionType(highlightedTexts[index] || "");
+      const isRequired = requiredQuestions[index] || false;
+      const currentType = selectedTypes[index] || "Text";
+      const answer = userAnswers[primaryValue];
+
+      if (isRequired) {
+        if (currentType === "Radio") {
+          if (answer === undefined) return false;
+        } else if (typeof answer === "string" && !answer.trim()) {
+          return false;
+        } else if (inputErrors[primaryValue]) {
+          return false;
+        }
+      }
+    }
+    return true;
+  };
+
+  const handleContinueToDocument = () => {
+    setShowCertificationPopup(false);
+    navigate("/Finish", { state: { userAnswers } });
+  };
+
+  const handleFinish = () => {
+    if (!areAllRequiredAnswered()) {
+      setShowWarning(true);
+      setTimeout(() => setShowWarning(false), 5000);
+      return;
+    }
+  
+    const flag = totalScore >= 40;
+    let message = "";
+    
+    if (totalScore >= 171) {
+      message = "Congratulations! You've achieved Level 3 Pro certification (Excellent Performance)";
+    } else if (totalScore >= 120) {
+      message = "Congratulations! You've achieved Calculation Expert certification";
+    } else if (totalScore >= 70) {
+      message = "Congratulations! You've achieved Loop Master certification";
+    } else {
+      message = "Please retry the exercise to improve your accuracy.";
+    }
+  
+    setCertificationMessage(message);
+    setShowCertificationPopup(true);
+    setIsCertified(flag);
   };
 
   const renderAnswerInput = (index: number) => {
@@ -409,14 +546,14 @@ const Live_Generation_2 = () => {
     let includeAdditional = userAnswers["Does the employee need to work at additional locations besides the normal place of work?"] !== undefined
     ? userAnswers["Does the employee need to work at additional locations besides the normal place of work?"]
     : true;
-    console.log("includeadditional: ", includeAdditional);
-    console.log("currenttype: ", currentType)
+
     return (
       <div key={index} className="mb-8">
         <div className="w-full">
           {includeAdditional || !isAdditionalLocationQuestion ? (
             <p className={`text-lg font-medium ${isDarkMode ? "text-teal-200" : "text-teal-900"}`}>
               {editedQuestions[index] || primaryValue || "Unnamed Question"}
+              {requiredQuestions[index] && <span className="text-red-500 ml-2">*</span>}
             </p>
           ) : null}
           {currentType === "Radio" ? (
@@ -577,12 +714,9 @@ const Live_Generation_2 = () => {
                   value={location}
                   onChange={(e) => {
                     const newValue = e.target.value;
-                    handleLocationChange(idx, newValue); // Update additional locations
+                    handleLocationChange(idx, newValue);
                     handleAnswerChange(index, newValue, undefined, true, idx + 1); 
                   }}
-                  // onChange={(e) => {
-                  //   handleAnswerChange(index, e.target.value);
-                  // }}
                   className={`mt-4 p-3 w-full rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${
                     isDarkMode
                       ? "bg-gray-700/80 border border-teal-600 focus:ring-teal-400 text-teal-200 placeholder-teal-300/70"
@@ -609,14 +743,6 @@ const Live_Generation_2 = () => {
     );
   };
 
-  const handleFinish = () => {
-    const hasErrors = Object.values(inputErrors).some(error => error !== "");
-    if (hasErrors) {
-      alert("Please correct all input errors before finishing.");
-      return;
-    }
-    navigate("/Finish", { state: { userAnswers } });
-  };
   const storedLevel = sessionStorage.getItem("level") ?? "/Level-Two-Part-Two";
   return (
     <div
@@ -626,7 +752,19 @@ const Live_Generation_2 = () => {
           : "bg-gradient-to-br from-indigo-50 via-teal-50 to-pink-50"
       }`}
     >
-      <Navbar level={storedLevel} questionnaire={"/Questionnaire"} live_generation={"/Live_Generation_2"} calculations={""}/>
+      <Navbar 
+        level={storedLevel} 
+        questionnaire="/Questionnaire" 
+        live_generation="/Live_Generation_2" 
+        {...(storedLevel === "/Level-Three-Quiz" ? { calculations: "/Calculations" } : {})}
+      />
+      <div className={`fixed top-14 right-2 p-2 rounded-lg shadow-md z-50 ${
+        isDarkMode 
+          ? "bg-gray-700/90 text-teal-300" 
+          : "bg-white/90 text-teal-700"
+      }`}>
+        <p className="font-bold">Score: {totalScore}</p>
+      </div>
       <div className="flex-grow flex items-center justify-center py-12 px-6">
         <div className="flex flex-row w-full max-w-7xl">
           <div
@@ -644,14 +782,19 @@ const Live_Generation_2 = () => {
                 {highlightedTexts.map((_, index) => renderAnswerInput(index))}
                 <div className="flex justify-end mt-8">
                   <button
-                    className={`px-6 py-3 text-white rounded-lg shadow-md transform hover:scale-105 transition-all duration-300 ${
-                      isDarkMode
-                        ? "bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800"
-                        : "bg-gradient-to-r from-teal-400 to-cyan-400 hover:from-teal-500 hover:to-cyan-500"
+                    className={`relative px-6 py-3 rounded-lg shadow-md transform transition-all duration-300 flex items-center space-x-2 ${
+                      areAllRequiredAnswered()
+                        ? isDarkMode
+                          ? "bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white hover:scale-105"
+                          : "bg-gradient-to-r from-teal-400 to-cyan-400 hover:from-teal-500 hover:to-cyan-500 text-white hover:scale-105"
+                        : isDarkMode
+                        ? "bg-gray-600/50 text-gray-400 cursor-not-allowed"
+                        : "bg-gray-300/50 text-gray-600 cursor-not-allowed"
                     }`}
                     onClick={handleFinish}
+                    disabled={!areAllRequiredAnswered()}
                   >
-                    Finish
+                    <span>Finish</span>
                   </button>
                 </div>
               </>
@@ -665,20 +808,6 @@ const Live_Generation_2 = () => {
                 </p>
               </div>
             )}
-            {/* {hasAdditionalLocationKey && (
-            <div className="flex justify-end mt-8">
-              <button
-                className={`px-6 py-3 text-white rounded-lg shadow-md transform hover:scale-105 transition-all duration-300 ${
-                  isDarkMode
-                    ? "bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800"
-                    : "bg-gradient-to-r from-teal-400 to-cyan-400 hover:from-teal-500 hover:to-cyan-500"
-                }`}
-                // onClick={handleAddMore}
-              >
-                Add More Locations
-              </button>
-            </div>
-          )} */}
           </div>
           <div
             className={`w-1/2 pl-8 rounded-xl shadow-lg border ${
@@ -693,6 +822,19 @@ const Live_Generation_2 = () => {
           </div>
         </div>
       </div>
+      <WarningAlert
+        message="Please answer all required questions marked with an asterisk (*)."
+        isVisible={showWarning}
+        isDarkMode={isDarkMode}
+      />
+      <CertificationPopup
+        message={certificationMessage}
+        isVisible={showCertificationPopup}
+        isDarkMode={isDarkMode}
+        onContinue={handleContinueToDocument}
+        onReplay={() => window.location.href = storedLevel}
+        score={totalScore}
+      />
     </div>
   );
 };
