@@ -1,11 +1,12 @@
 import Navbar from "../components/Navbar";
-import { FaChevronDown } from "react-icons/fa";
-import React, { useEffect, useContext } from "react";
+import { FaChevronDown, FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import React, { useEffect, useContext, useCallback, useState, useRef } from "react";
 import { useQuestionType } from "../context/QuestionTypeContext";
 import { useHighlightedText } from "../context/HighlightedTextContext";
 import { determineQuestionType, numberTypes } from "../utils/questionTypeUtils";
 import { ThemeContext } from "../context/ThemeContext";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { useScore } from "../context/ScoreContext";
 import 'shepherd.js/dist/css/shepherd.css';
 
 interface DivWithDropdownProps {
@@ -19,6 +20,7 @@ interface DivWithDropdownProps {
   initialRequired: boolean;
   isFollowUp?: boolean;
   providedId: string;
+  typeChanged: boolean;
 }
 
 const DivWithDropdown: React.FC<DivWithDropdownProps> = ({
@@ -31,6 +33,8 @@ const DivWithDropdown: React.FC<DivWithDropdownProps> = ({
   initialType,
   initialRequired,
   isFollowUp = false,
+  providedId,
+  typeChanged,
 }) => {
   const { isDarkMode } = useContext(ThemeContext);
   const [questionText, setQuestionText] = React.useState(initialQuestionText || "No text selected");
@@ -40,6 +44,8 @@ const DivWithDropdown: React.FC<DivWithDropdownProps> = ({
   const { primaryValue } = determineQuestionType(textValue);
 
   const handleTypeSelect = (type: string) => {
+    if (typeChanged) return;
+    
     setSelectedType(type);
     onTypeChange(index, type);
 
@@ -111,13 +117,14 @@ const DivWithDropdown: React.FC<DivWithDropdownProps> = ({
                 isDarkMode
                   ? "bg-gray-600/80 text-teal-200 hover:bg-gray-500"
                   : "bg-white/80 text-teal-900 hover:bg-white"
-              }`}
-              onClick={() => setIsOpen(!isOpen)}
+              } ${typeChanged ? 'opacity-50 cursor-not-allowed' : ''}`}
+              onClick={() => !typeChanged && setIsOpen(!isOpen)}
+              disabled={typeChanged}
             >
               <span>{selectedType}</span>
-              <FaChevronDown className={isDarkMode ? "text-teal-400" : "text-teal-600"} />
+              {!typeChanged && <FaChevronDown className={isDarkMode ? "text-teal-400" : "text-teal-600"} />}
             </button>
-            {isOpen && (
+            {isOpen && !typeChanged && (
               <div
                 id="open-drawer"
                 className={`absolute right-0 mt-1 w-40 h-[12vh] rounded-lg shadow-lg z-50 ${
@@ -177,6 +184,9 @@ const DivWithDropdown: React.FC<DivWithDropdownProps> = ({
 
 const Questionnaire = () => {
   const { isDarkMode } = useContext(ThemeContext);
+  const { questionnaireScore, updateQuestionnaireScore } = useScore();
+  const [leftActive, setLeftActive] = useState(true);
+  const [rightActive, setRightActive] = useState(false);
   const { highlightedTexts } = useHighlightedText();
   const {
     selectedTypes,
@@ -191,6 +201,11 @@ const Questionnaire = () => {
     questionTexts,
     setQuestionTexts,
   } = useQuestionType();
+  const [scoredQuestions, setScoredQuestions] = useState<Record<number, { typeScored: boolean, requiredScored: boolean }>>({});
+  const [bonusAwarded, setBonusAwarded] = useState(false);
+  const [scoreFeedback, setScoreFeedback] = useState<{points: number, id: number} | null>(null);
+  const [typeChangedMap, setTypeChangedMap] = useState<Record<number, boolean>>({});
+  const feedbackId = useRef(0);
 
   const followUpQuestions = [
     "What's the probation period length?",
@@ -199,64 +214,151 @@ const Questionnaire = () => {
     "Who is the HR/Relevant Contact?",
   ];
 
-  const initializeRequiredStatus = (texts: string[]) => {
-    if (requiredQuestions.length !== texts.length) {
-      return texts.map(() => false);
-    }
-    return requiredQuestions;
+  const showFeedback = (points: number) => {
+    feedbackId.current += 1;
+    setScoreFeedback({points, id: feedbackId.current});
+    setTimeout(() => setScoreFeedback(null), 1500);
   };
 
+  const initializeRequiredStatus = (texts: string[]) => {
+    return texts.map(() => false);
+  };
+
+  const enhancedDetermineQuestionType = useCallback((text: string) => {
+    const result = determineQuestionType(text);
+    return {
+      ...result,
+      correctType: result.primaryType
+    };
+  }, []);
+
+  const scoreTypeSelection = useCallback((index: number, selectedType: string) => {
+    if (scoredQuestions[index]?.typeScored) return;
+    
+    const textValue = uniqueQuestions[index];
+    const { correctType } = enhancedDetermineQuestionType(textValue);
+    
+    const isEquivalent = (selectedType === "Text" && correctType === "Paragraph") || 
+                         (selectedType === "Paragraph" && correctType === "Text");
+    
+    const isCorrect = selectedType === correctType || isEquivalent;
+    const points = isCorrect ? 2 : -2;
+    
+    updateQuestionnaireScore(points);
+    showFeedback(points);
+    
+    setScoredQuestions(prev => ({
+      ...prev,
+      [index]: { 
+        ...prev[index], 
+        typeScored: true,
+        typeCorrect: isCorrect
+      }
+    }));
+
+    setTypeChangedMap(prev => ({
+      ...prev,
+      [index]: true
+    }));
+  }, [uniqueQuestions, enhancedDetermineQuestionType, updateQuestionnaireScore, scoredQuestions]);
+
+  const scoreRequiredStatus = useCallback((index: number, isRequired: boolean) => {
+    if (isRequired) {
+      if (!scoredQuestions[index]?.requiredScored) {
+        updateQuestionnaireScore(2);
+        showFeedback(2);
+        setScoredQuestions(prev => ({
+          ...prev,
+          [index]: { 
+            ...prev[index], 
+            requiredScored: true,
+            requiredCorrect: true
+          }
+        }));
+      }
+    } else {
+      if (scoredQuestions[index]?.requiredScored) {
+        updateQuestionnaireScore(-2);
+        showFeedback(-2);
+        setScoredQuestions(prev => ({
+          ...prev,
+          [index]: { 
+            ...prev[index], 
+            requiredScored: false,
+            requiredCorrect: false
+          }
+        }));
+      }
+    }
+  }, [updateQuestionnaireScore, scoredQuestions]);
+
+  const checkForBonus = useCallback(() => {
+    if (uniqueQuestions.length === 0 || bonusAwarded) return;
+
+    const allCorrect = uniqueQuestions.every((text, index) => {
+      const { correctType } = enhancedDetermineQuestionType(text);
+      const selectedType = selectedTypes[index];
+      
+      const typeCorrect = selectedType === correctType || 
+                         (selectedType === "Text" && correctType === "Paragraph") || 
+                         (selectedType === "Paragraph" && correctType === "Text");
+      
+      const requiredCorrect = requiredQuestions[index];
+      return typeCorrect && requiredCorrect;
+    });
+
+    if (allCorrect) {
+      updateQuestionnaireScore(10);
+      showFeedback(10);
+      setBonusAwarded(true);
+    }
+  }, [uniqueQuestions, selectedTypes, requiredQuestions, enhancedDetermineQuestionType, bonusAwarded, updateQuestionnaireScore]);
+
   useEffect(() => {
-    console.log("highlightedTexts in Questionnaire:", highlightedTexts);
-  
     const processedTexts: string[] = [];
     const questionMap = new Map();
-  
+
     const isProbationaryClauseSelected = highlightedTexts.some((text) =>
-      text.toLowerCase().includes("probationary period") &&
-      text.includes("[Probation Period Length]") &&
+      text.toLowerCase().includes("probationary period") && 
+      text.includes("[Probation Period Length]") && 
       text.length > "[Probation Period Length]".length
     );
-  
+
     const isProbationLengthExplicitlySelected = highlightedTexts.includes("Probation Period Length");
-  
+
     const filteredQuestions = highlightedTexts.filter((text) => {
       const { primaryValue } = determineQuestionType(text);
       const isFollowUp = followUpQuestions.includes(primaryValue || "");
-  
+
       if (text === "Probation Period Length") {
         return true;
       }
-  
+
       if (isProbationaryClauseSelected && text === "Is the clause of probationary period applicable?") {
-        return true; // Ensure the probation clause question is included
+        return true;
       }
-  
+
       if (isProbationaryClauseSelected && text === "Probation Period Length" && !isProbationLengthExplicitlySelected) {
         return false;
       }
-  
+
       const shouldInclude = !isFollowUp ||
         (primaryValue === "What's the probation period length?" && text === "Probation Period Length");
       return shouldInclude;
     });
-  
-    console.log("filteredQuestions:", filteredQuestions);
-  
+
     for (const text of filteredQuestions) {
       const { primaryValue } = determineQuestionType(text);
-      console.log(`Processing text: ${text}, primaryValue: ${primaryValue}`);
       if (primaryValue && !questionMap.has(primaryValue)) {
         questionMap.set(primaryValue, text);
         processedTexts.push(text);
       }
     }
-  
-    console.log("processedTexts:", processedTexts);
+
     setUniqueQuestions(processedTexts);
     const initialRequired = initializeRequiredStatus(processedTexts);
     setRequiredQuestions(initialRequired);
-  
+
     const initialTexts = processedTexts.map(
       (text) => determineQuestionType(text).primaryValue || "No text selected"
     );
@@ -270,30 +372,28 @@ const Questionnaire = () => {
       }
       return primaryType !== "Unknown" ? primaryType : "Text";
     });
-  
-    console.log("initialTexts (questions):", initialTexts);
-    console.log("initialTypes:", initialTypes);
-  
+
     setQuestionTexts(initialTexts);
     setSelectedTypes(initialTypes);
     setEditedQuestions(initialTexts);
-  
+    setScoredQuestions({});
+    setBonusAwarded(false);
+    setTypeChangedMap({});
+
     if (questionOrder.length !== processedTexts.length) {
       setQuestionOrder(processedTexts.map((_, index) => index));
     }
   }, [highlightedTexts, setUniqueQuestions, setQuestionTexts, setSelectedTypes, setEditedQuestions, setRequiredQuestions, setQuestionOrder]);
 
   useEffect(() => {
-    console.log("Updated uniqueQuestions:", uniqueQuestions);
-    console.log("Updated questionTexts:", questionTexts);
-    console.log("Updated selectedTypes:", selectedTypes);
-    console.log("Updated questionOrder:", questionOrder);
-  }, [uniqueQuestions, questionTexts, selectedTypes, questionOrder]);
+    checkForBonus();
+  }, [selectedTypes, requiredQuestions, checkForBonus]);
 
   const handleTypeChange = (index: number, type: string) => {
     const newTypes = [...selectedTypes];
     newTypes[index] = type;
     setSelectedTypes(newTypes);
+    scoreTypeSelection(index, type);
 
     const textValue = uniqueQuestions[index];
     const { primaryValue } = determineQuestionType(textValue);
@@ -324,6 +424,7 @@ const Questionnaire = () => {
     const newRequired = [...requiredQuestions];
     newRequired[index] = required;
     setRequiredQuestions(newRequired);
+    scoreRequiredStatus(index, required);
   };
 
   const handleDragEnd = (result: any) => {
@@ -352,6 +453,78 @@ const Questionnaire = () => {
       }`}
     >
       <Navbar level={""} questionnaire={""} live_generation={""} calculations={""} />
+      
+      {/* Added Score Display */}
+      <div
+        className={`absolute top-16 left-6 w-40 h-12 rounded-xl shadow-lg flex items-center justify-center text-sm font-semibold z-20 ${
+          isDarkMode
+            ? "bg-gradient-to-r from-gray-700 to-gray-800 text-teal-200"
+            : "bg-gradient-to-r from-teal-200 to-cyan-200 text-teal-900"
+        }`}
+      >
+        <div className="relative">
+          Score: {questionnaireScore}
+          {scoreFeedback && (
+            <div 
+              key={scoreFeedback.id}
+              className={`absolute -top-6 right-0 font-bold text-lg ${
+                scoreFeedback.points > 0 
+                  ? "text-emerald-400" 
+                  : "text-rose-500"
+              } animate-[float-up_1.5s_ease-out_forwards]`}
+            >
+              {scoreFeedback.points > 0 ? `+${scoreFeedback.points}` : scoreFeedback.points}
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {/* Added Employer/Employee Toggle */}
+      <div
+        className={`absolute top-16 right-6 w-80 h-12 rounded-xl shadow-lg flex items-center justify-center text-sm font-semibold z-20 ${
+          isDarkMode
+            ? "bg-gradient-to-r from-gray-700 to-gray-800 text-teal-200"
+            : "bg-gradient-to-r from-teal-200 to-cyan-200 text-teal-900"
+        }`}
+      >
+        <div className="flex items-center space-x-6">
+          <div
+            className={`flex items-center space-x-2 ${
+              leftActive ? (isDarkMode ? "text-teal-400" : "text-teal-600") : (isDarkMode ? "text-cyan-400" : "text-cyan-500")
+            } transition-all duration-300`}
+          >
+            <span>Employer</span>
+          </div>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => {
+                setLeftActive(true);
+                setRightActive(false);
+              }}
+              className={`${isDarkMode ? "text-teal-400 hover:text-cyan-400" : "text-teal-600 hover:text-cyan-500"} transform hover:scale-110 transition-all duration-300`}
+            >
+              <FaChevronLeft className="text-xl" />
+            </button>
+            <button
+              onClick={() => {
+                setRightActive(true);
+                setLeftActive(false);
+              }}
+              className={`${isDarkMode ? "text-teal-400 hover:text-cyan-400" : "text-teal-600 hover:text-cyan-500"} transform hover:scale-110 transition-all duration-300`}
+            >
+              <FaChevronRight className="text-xl" />
+            </button>
+          </div>
+          <div
+            className={`flex items-center space-x-2 ${
+              rightActive ? (isDarkMode ? "text-teal-400" : "text-teal-600") : (isDarkMode ? "text-cyan-400" : "text-cyan-500")
+            } transition-all duration-300`}
+          >
+            <span>Employee</span>
+          </div>
+        </div>
+      </div>
+
       <div className="flex-grow flex flex-col items-center justify-center pt-24 pb-12 px-6 overflow-y-auto">
         <div className="w-full max-w-4xl">
           {filteredUniqueQuestions.length > 0 ? (
@@ -384,6 +557,7 @@ const Questionnaire = () => {
                                 initialType={orderedSelectedTypes[displayIndex]}
                                 initialRequired={orderedRequiredQuestions[displayIndex]}
                                 providedId={`question-${originalIndex}`}
+                                typeChanged={typeChangedMap[originalIndex] || false}
                               />
                             </div>
                           )}
@@ -397,7 +571,11 @@ const Questionnaire = () => {
             </DragDropContext>
           ) : (
             <div
-              className={`text-center py-12 rounded-xl shadow-lg border ${isDarkMode ? "bg-gray-800/80 backdrop-blur-sm border-gray-700/20" : "bg-white/80 backdrop-blur-sm border-teal-100/20"}`}
+              className={`text-center py-12 rounded-xl shadow-lg border ${
+                isDarkMode 
+                  ? "bg-gray-800/80 backdrop-blur-sm border-gray-700/20" 
+                  : "bg-white/80 backdrop-blur-sm border-teal-100/20"
+              }`}
             >
               <p className={`text-lg font-medium ${isDarkMode ? "text-teal-300" : "text-teal-700"}`}>
                 No text has been selected yet.
@@ -414,8 +592,3 @@ const Questionnaire = () => {
 };
 
 export default Questionnaire;
-
-
-
-
-// latest code

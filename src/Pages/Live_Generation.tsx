@@ -5,12 +5,12 @@ import { determineQuestionType, findPlaceholderByValue, textTypes, numberTypes, 
 import { documentText } from "../utils/EmploymentAgreement";
 import { useHighlightedText } from "../context/HighlightedTextContext";
 import { useQuestionType } from "../context/QuestionTypeContext";
-// import { useQuestionEditContext } from "../context/QuestionEditContext";
 import { ThemeContext } from "../context/ThemeContext";
 import parse, { DOMNode, Element } from "html-react-parser";
 import { useLocation } from 'react-router-dom';
 import Shepherd from 'shepherd.js';
 import 'shepherd.js/dist/css/shepherd.css';
+import { useScore } from "../context/ScoreContext";  
 
 // Warning Alert Component
 interface WarningAlertProps {
@@ -32,6 +32,79 @@ const WarningAlert: React.FC<WarningAlertProps> = ({ message, isVisible, isDarkM
     >
       <p className="font-bold">Warning</p>
       <p className="text-sm">{message}</p>
+    </div>
+  );
+};
+
+interface CertificationPopupProps {
+  message: string;
+  isVisible: boolean;
+  isDarkMode: boolean;
+  onContinue: () => void;
+  onReplay: () => void;
+  score: number;
+}
+
+const CertificationPopup: React.FC<CertificationPopupProps> = ({ 
+  message, 
+  isVisible, 
+  isDarkMode, 
+  onContinue,
+  onReplay,
+  score
+}) => {
+  if (!isVisible) return null;
+
+  // Determine button configuration based on score
+  const isExcellent = score > 151;
+  const isFailed = score < 40;
+  const isIntermediate = !isExcellent && !isFailed;
+
+  return (
+    <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50">
+      <div className={`p-6 rounded-xl shadow-lg max-w-md w-full mx-4 ${
+        isDarkMode 
+          ? "bg-gradient-to-br from-gray-700 to-gray-800 border border-gray-600" 
+          : "bg-gradient-to-br from-white to-gray-100 border border-gray-200"
+      }`}>
+        <h3 className={`text-2xl font-bold mb-4 ${
+          isDarkMode ? "text-teal-300" : "text-teal-700"
+        }`}>
+          {isFailed ? "Results" : "🎉 Congratulations!"}
+        </h3>
+        <p className={`mb-6 ${isDarkMode ? "text-gray-200" : "text-gray-700"}`}>
+          {message}
+        </p>
+        <div className={`flex ${isIntermediate ? "justify-between" : "justify-end"}`}>
+          {/* Show Replay button only for failed or intermediate cases */}
+          {(isFailed || isIntermediate) && (
+            <button
+              onClick={onReplay}
+              className={`px-4 py-2 rounded-lg ${
+                isDarkMode
+                  ? "bg-gray-500 hover:bg-gray-600 text-white"
+                  : "bg-gray-500 hover:bg-gray-600 text-white"
+              } transition-colors duration-200`}
+            >
+              Replay
+            </button>
+          )}
+          
+          {/* Show Continue button for excellent or intermediate cases */}
+          {(isExcellent || isIntermediate) && (
+            <button
+              onClick={onContinue}
+              className={`px-4 py-2 rounded-lg ${
+                isDarkMode
+                  ? "bg-teal-600 hover:bg-teal-700 text-white"
+                  : "bg-teal-500 hover:bg-teal-600 text-white"
+              } transition-colors duration-200`}
+            >
+              Continue to Document
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
@@ -114,6 +187,10 @@ const Live_Generation = () => {
   const [inputErrors, setInputErrors] = React.useState<{ [key: string]: string }>({});
   const [showWarning, setShowWarning] = React.useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const { questionnaireScore } = useScore();
+  const [showCertificationPopup, setShowCertificationPopup] = React.useState(false);
+  const [certificationMessage, setCertificationMessage] = React.useState("");
+  const [isCertified, setIsCertified] = React.useState(false);
 
   console.log("highlightedTexts in Live_Generation:", highlightedTexts);
   console.log("editedQuestions in Live_Generation:", editedQuestions);
@@ -846,15 +923,35 @@ const Live_Generation = () => {
     return true;
   };
 
+  const handleContinueToDocument = () => {
+    setShowCertificationPopup(false);
+    navigate("/Finish", { state: { userAnswers } });
+  };
+
   const handleFinish = () => {
     if (!areAllRequiredAnswered()) {
       setShowWarning(true);
-      setTimeout(() => {
-        setShowWarning(false);
-      }, 5000);
+      setTimeout(() => setShowWarning(false), 5000);
       return;
     }
-    navigate("/Finish", { state: { userAnswers } });
+  
+    // Determine certification status
+    const flag = questionnaireScore >= 40;
+    let message = "";
+    
+    if (questionnaireScore >= 151) {
+      message = "Congratulations! You've achieved Document Automation Pro certification (Excellent Performance)";
+    } else if (questionnaireScore >= 81) {
+      message = "Congratulations! You've achieved Document Automation Novice certification";
+    } else if (questionnaireScore >= 40) {
+      message = "Congratulations! You've achieved Document Automation Beginner certification";
+    } else {
+      message = "Please retry the exercise to improve your accuracy.";
+    }
+  
+    setCertificationMessage(message);
+    setShowCertificationPopup(true);
+    setIsCertified(flag);
   };
 
   return (
@@ -866,6 +963,14 @@ const Live_Generation = () => {
       }`}
     >
       <Navbar />
+      {/* Add this score display */}
+      <div className={`fixed top-14 right-2 p-2 rounded-lg shadow-md z-50 ${
+        isDarkMode 
+          ? "bg-gray-700/90 text-teal-300" 
+          : "bg-white/90 text-teal-700"
+      }`}>
+        <p className="font-bold">Score: {questionnaireScore}</p>
+      </div>
       <div className="flex-grow flex items-center justify-center py-12 px-6">
         <div className="flex flex-row w-full max-w-7xl">
           <div
@@ -947,6 +1052,14 @@ const Live_Generation = () => {
         message="Please answer all required questions marked with an asterisk (*)."
         isVisible={showWarning}
         isDarkMode={isDarkMode}
+      />
+      <CertificationPopup
+        message={certificationMessage}
+        isVisible={showCertificationPopup}
+        isDarkMode={isDarkMode}
+        onContinue={handleContinueToDocument}
+        onReplay={() => window.location.href = "/Level-Two-Part-Two"}
+        score={questionnaireScore}
       />
     </div>
   );
