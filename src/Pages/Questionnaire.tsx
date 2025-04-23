@@ -33,7 +33,6 @@ const DivWithDropdown: React.FC<DivWithDropdownProps> = ({
   initialType,
   initialRequired,
   isFollowUp = false,
-  providedId,
   typeChanged,
 }) => {
   const { isDarkMode } = useContext(ThemeContext);
