@@ -190,7 +190,7 @@ const Live_Generation = () => {
   const { questionnaireScore } = useScore();
   const [showCertificationPopup, setShowCertificationPopup] = React.useState(false);
   const [certificationMessage, setCertificationMessage] = React.useState("");
-  const [isCertified, setIsCertified] = React.useState(false);
+  const [_,setIsCertified] = React.useState(false);
 
   console.log("highlightedTexts in Live_Generation:", highlightedTexts);
   console.log("editedQuestions in Live_Generation:", editedQuestions);
