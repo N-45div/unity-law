@@ -171,7 +171,7 @@ const Live_Generation_2 = () => {
   const { totalScore } = useScore();
   const [showCertificationPopup, setShowCertificationPopup] = useState(false);
   const [certificationMessage, setCertificationMessage] = useState("");
-  const [isCertified, setIsCertified] = useState(false);
+  const [_, setIsCertified] = useState(false);
 
   useEffect(() => {
     const processedTexts: string[] = [];
