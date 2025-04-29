@@ -235,7 +235,7 @@ const Calculations = () => {
         <div className="flex justify-center mt-10">
             <button 
             className="mt-55 px-6 py-3 bg-purple-500 text-white text-lg font-semibold rounded-lg hover:bg-purple-600"
-            onClick={() => navigate("/Live_Generation")}>
+            onClick={() => navigate("/Live_Generation_2")}>
                 Continue
             </button>
         </div>
