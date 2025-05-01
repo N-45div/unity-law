@@ -28,8 +28,7 @@ const Navbar = ({ level, questionnaire, live_generation, calculations }: NavbarP
     // Check if current path indicates Level 3
     if (location.pathname.includes("Level-Three") || 
         location.pathname.includes("Questionnaire_Level3") ||
-        location.pathname === "/Calculations" ||
-        location.pathname === "/Live_Generation_2") {
+        location.pathname === "/Calculations") {
       
       // If we're in a Level 3 specific page, update and persist the level
       if (currentLevel !== 3) {
@@ -55,7 +54,6 @@ const Navbar = ({ level, questionnaire, live_generation, calculations }: NavbarP
     const routes: Record<string, string> = {
       // Common path
       "/Finish": "Generated Document",
-      "/Live_Generation": "Live Document Generation",
       
       // Level 2 paths
       "/Level-Two-Part-Two": "Document",
@@ -118,7 +116,7 @@ const Navbar = ({ level, questionnaire, live_generation, calculations }: NavbarP
           targetPath = "/Questionnaire";
           break;
         case "Live Document Generation":
-          targetPath = "/Live_Generation";
+          targetPath = "/Live_Generation_2";
           break;
         case "Generated Document":
           targetPath = "/Finish";
@@ -131,7 +129,7 @@ const Navbar = ({ level, questionnaire, live_generation, calculations }: NavbarP
     // Override with custom paths from props if provided
     if (label === "Document" && level) targetPath = level;
     if (label === "Questionnaire" && questionnaire && currentLevel === 2) targetPath = questionnaire;
-    // if (label === "Live Document Generation" && live_generation) targetPath = live_generation;
+    if (label === "Live Document Generation" && live_generation) targetPath = live_generation;
     if (label === "Calculations" && calculations) targetPath = calculations;
     
     console.log(`Navigating to: ${targetPath}, Label: ${label}, Current level: ${storedLevel}`);

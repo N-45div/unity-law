@@ -3,9 +3,9 @@ import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { ThemeContext } from "../context/ThemeContext";
 import { useHighlightedText } from "../context/HighlightedTextContext";
+import { useScore } from '../context/ScoreContext';
 import { motion } from "framer-motion";
 import { FaCalculator } from "react-icons/fa";
-import { useScore } from "../context/ScoreContext";
 
 const Calculations = () => {
   const { isDarkMode } = useContext(ThemeContext);
@@ -86,7 +86,7 @@ const Calculations = () => {
           : "bg-gradient-to-br from-indigo-50 via-teal-50 to-pink-50"
       }`}
     >
-      <Navbar level={"/Level-Three-Quiz"} questionnaire={"/Questionnaire_Level3"} live_generation={"/Live_Generation"} calculations={"/Calculations"}/>
+      <Navbar level={"/Level-Three-Quiz"} questionnaire={"/Questionnaire_Level3"} live_generation={"/Live_Generation_2"} calculations={"/Calculations"}/>
       <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-4 z-30">
         <button
           onClick={() => navigate("/Questionnaire_Level3")}
@@ -107,6 +107,16 @@ const Calculations = () => {
           }`}
         >
           Home
+        </button>
+        <button
+          onClick={() => navigate("/Live_Generation_2")}
+          className={`px-4 py-2 rounded-lg font-medium shadow-md transition-all duration-300 ${
+            isDarkMode
+              ? "bg-gray-700 text-teal-200 hover:bg-gray-600"
+              : "bg-teal-200 text-teal-900 hover:bg-cyan-200"
+          }`}
+        >
+          Continue
         </button>
       </div>
       {/* Score Display - Only animation kept */}
@@ -231,7 +241,7 @@ const Calculations = () => {
           </div>
         </div>
       )}
-      {highlightedTexts.includes("Unused Holiday Days") && (
+      {/* {highlightedTexts.includes("Unused Holiday Days") && (
         <div className="flex justify-center mt-10">
             <button 
             className="mt-55 px-6 py-3 bg-purple-500 text-white text-lg font-semibold rounded-lg hover:bg-purple-600"
@@ -239,7 +249,7 @@ const Calculations = () => {
                 Continue
             </button>
         </div>
-      )}
+      )} */}
     </div>
   );
 };

@@ -25,8 +25,22 @@ const LevelTwoPart_Two_Demo = () => {
   const { isDarkMode } = useContext(ThemeContext);
   const [tooltip, setTooltip] = useState<string | null>(null);
   const { highlightedTexts, addHighlightedText } = useHighlightedText();
-  const { selectedTypes } = useQuestionType();
+  const { selectedTypes, setSelectedTypes } = useQuestionType();
   const documentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    console.log("LevelTwoPart_Two_Demo - Rendering at:", location.pathname);
+    sessionStorage.removeItem("level");
+    sessionStorage.setItem("level", location.pathname);
+
+    // Initialize selectedTypes if not already set
+    const savedTypes = sessionStorage.getItem("selectedQuestionTypes");
+    if (!savedTypes && highlightedTexts.length > 0) {
+      const initialTypes = highlightedTexts.map(() => "Text");
+      setSelectedTypes(initialTypes);
+      sessionStorage.setItem("selectedQuestionTypes", JSON.stringify(initialTypes));
+    }
+  }, [location.pathname, highlightedTexts, setSelectedTypes]);
 
   const getDocumentText = () => {
     return documentRef.current?.textContent || "";
@@ -38,7 +52,6 @@ const LevelTwoPart_Two_Demo = () => {
 
     const range = selection.getRangeAt(0);
     const selectedText = range.toString();
-
     let textWithoutBrackets = selectedText;
     let hasValidBrackets = false;
 
@@ -71,6 +84,12 @@ const LevelTwoPart_Two_Demo = () => {
       console.log("Selected Edit Placeholder:", textWithoutBrackets);
       addHighlightedText(textWithoutBrackets);
       console.log("Updated highlightedTexts after adding:", highlightedTexts);
+
+      // Update selectedTypes with default "Text" for new placeholder
+      const newTypes = [...selectedTypes, "Text"];
+      setSelectedTypes(newTypes);
+      sessionStorage.setItem("selectedQuestionTypes", JSON.stringify(newTypes));
+
       const span = document.createElement("span");
       span.style.backgroundColor = isDarkMode ? "rgba(255, 245, 157, 0.5)" : "rgba(255, 245, 157, 0.7)";
       span.textContent = selectedText;
@@ -81,16 +100,21 @@ const LevelTwoPart_Two_Demo = () => {
           selectedText.length < 35 || 
           selectedText.length > 450) return;
       addHighlightedText(textWithoutBrackets);
+
+      // Update selectedTypes with default "Text" for new condition
+      const newTypes = [...selectedTypes, "Text"];
+      setSelectedTypes(newTypes);
+      sessionStorage.setItem("selectedQuestionTypes", JSON.stringify(newTypes));
+
       const span = document.createElement("span");
       span.style.backgroundColor = isDarkMode ? "rgba(129, 236, 236, 0.5)" : "rgba(129, 236, 236, 0.7)";
       span.textContent = selectedText;
       range.deleteContents();
       range.insertNode(span);
-    } // Inside the "Big Condition" else-if block in handleIconClick
-    else if (label === "Big Condition") {
+    } else if (label === "Big Condition") {
       if (!(selectedText.startsWith("(") && selectedText.endsWith(")"))) return;
       console.log("Selected Big Condition:", selectedText);
-    
+
       let clauseContent = textWithoutBrackets;
       const headingsToStrip = ["PROBATIONARY PERIOD", "PENSION"];
       for (const heading of headingsToStrip) {
@@ -100,12 +124,17 @@ const LevelTwoPart_Two_Demo = () => {
           break;
         }
       }
-    
+
       addHighlightedText(clauseContent);
-    
+
+      // Update selectedTypes with default "Text" for new condition
+      const newTypes = [...selectedTypes, "Text"];
+      setSelectedTypes(newTypes);
+      sessionStorage.setItem("selectedQuestionTypes", JSON.stringify(newTypes));
+
       const fragment = document.createDocumentFragment();
       const contents = range.cloneContents();
-      
+
       const applyHighlight = (node: Node) => {
         if (node.nodeType === Node.TEXT_NODE) {
           const span = document.createElement("span");
@@ -128,39 +157,53 @@ const LevelTwoPart_Two_Demo = () => {
         }
         return null;
       };
-    
+
       contents.childNodes.forEach((node) => {
         const newNode = applyHighlight(node);
         if (newNode) {
           fragment.appendChild(newNode);
         }
       });
-    
+
       range.deleteContents();
       range.insertNode(fragment);
-    
+
       const probationClauseContent = "The first [Probation Period Length] of employment will be a probationary period. The Company shall assess the Employee’s performance and suitability during this time. Upon successful completion, the Employee will be confirmed in their role.";
       const pensionClauseContent = "The Employee will be enrolled in the Company’s pension scheme in accordance with auto-enrolment legislation.";
-    
-      const normalizeText = (text: string) => text.replace(/\s+/g, "").toLowerCase();
+
+      const normalizeText = (text: string) => text.replace(/\s+/g, "");
       const normalizedSelectedText = normalizeText(textWithoutBrackets);
       const normalizedProbationClause = normalizeText(probationClauseContent);
       const normalizedPensionClause = normalizeText(pensionClauseContent);
-    
+
       console.log("Normalized selectedText:", normalizedSelectedText);
       console.log("Normalized probationClause:", normalizedProbationClause);
-    
-      if (normalizedSelectedText.includes(normalizeText("probationary period"))) {
+
+      if (normalizedSelectedText === normalizedProbationClause) {
         console.log("Probation Clause matched, adding question instead of placeholder");
         addHighlightedText("Is the clause of probationary period applicable?");
+        // Add "Text" type for the additional question
+        const newTypesWithQuestion = [...newTypes, "Text"];
+        setSelectedTypes(newTypesWithQuestion);
+        sessionStorage.setItem("selectedQuestionTypes", JSON.stringify(newTypesWithQuestion));
       } else if (normalizedSelectedText === normalizedPensionClause) {
         console.log("Pension Clause matched, adding Pension question");
         addHighlightedText("Is the Pension clause applicable?");
+        // Add "Text" type for the additional question
+        const newTypesWithQuestion = [...newTypes, "Text"];
+        setSelectedTypes(newTypesWithQuestion);
+        sessionStorage.setItem("selectedQuestionTypes", JSON.stringify(newTypesWithQuestion));
       } else {
         console.log("No clause matched.");
       }
     } else if (label === "Loop") {
       addHighlightedText(textWithoutBrackets);
+
+      // Update selectedTypes with default "Text" for new loop
+      const newTypes = [...selectedTypes, "Text"];
+      setSelectedTypes(newTypes);
+      sessionStorage.setItem("selectedQuestionTypes", JSON.stringify(newTypes));
+
       const span = document.createElement("span");
       span.style.backgroundColor = isDarkMode ? "rgba(255, 245, 157, 0.5)" : "rgba(255, 245, 157, 0.7)";
       span.textContent = selectedText;
@@ -267,7 +310,8 @@ const LevelTwoPart_Two_Demo = () => {
       <Navbar
         level={"/Level-Two-Part-Two-Demo"}
         questionnaire={"/Questionnaire"}
-        live_generation={"/Live_Generation"} calculations={""}      />
+        live_generation={"/Live_Generation"}
+      />
       <div className="fixed flex top-16 right-0 z-50 px-6 py-3 space-x-6">
         {icons.map(({ icon, label }, index) => (
           <div key={index} className="relative flex items-center">
@@ -389,7 +433,6 @@ const LevelTwoPart_Two_Demo = () => {
           </div>
         )}
       </div>
-
       <div className="max-w-5xl mx-auto mt-10 px-8 pb-20" ref={documentRef}>
         <div
           className={`p-6 rounded-3xl shadow-xl border ${
@@ -411,7 +454,3 @@ const LevelTwoPart_Two_Demo = () => {
 };
 
 export default LevelTwoPart_Two_Demo;
-
-
-
-// original

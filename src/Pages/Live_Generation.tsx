@@ -1,16 +1,13 @@
-import React, { useContext, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useState, useRef, useCallback, useContext,useEffect } from "react";
 import Navbar from "../components/Navbar";
-import { determineQuestionType, findPlaceholderByValue, textTypes, numberTypes, dateTypes, radioTypes } from "../utils/questionTypeUtils";
 import { documentText } from "../utils/EmploymentAgreement";
 import { useHighlightedText } from "../context/HighlightedTextContext";
 import { useQuestionType } from "../context/QuestionTypeContext";
+import { useQuestionEditContext } from "../context/QuestionEditContext";
 import { ThemeContext } from "../context/ThemeContext";
+import { useScore } from "../context/ScoreContext";
 import parse, { DOMNode, Element } from "html-react-parser";
-import { useLocation } from 'react-router-dom';
-import Shepherd from 'shepherd.js';
-import 'shepherd.js/dist/css/shepherd.css';
-import { useScore } from "../context/ScoreContext";  
 
 // Warning Alert Component
 interface WarningAlertProps {
@@ -36,6 +33,7 @@ const WarningAlert: React.FC<WarningAlertProps> = ({ message, isVisible, isDarkM
   );
 };
 
+// Certification Popup Component
 interface CertificationPopupProps {
   message: string;
   isVisible: boolean;
@@ -45,38 +43,40 @@ interface CertificationPopupProps {
   score: number;
 }
 
-const CertificationPopup: React.FC<CertificationPopupProps> = ({ 
-  message, 
-  isVisible, 
-  isDarkMode, 
+const CertificationPopup: React.FC<CertificationPopupProps> = ({
+  message,
+  isVisible,
+  isDarkMode,
   onContinue,
   onReplay,
-  score
+  score,
 }) => {
   if (!isVisible) return null;
 
-  // Determine button configuration based on score
   const isExcellent = score > 151;
   const isFailed = score < 40;
   const isIntermediate = !isExcellent && !isFailed;
 
   return (
     <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50">
-      <div className={`p-6 rounded-xl shadow-lg max-w-md w-full mx-4 ${
-        isDarkMode 
-          ? "bg-gradient-to-br from-gray-700 to-gray-800 border border-gray-600" 
-          : "bg-gradient-to-br from-white to-gray-100 border border-gray-200"
-      }`}>
-        <h3 className={`text-2xl font-bold mb-4 ${
-          isDarkMode ? "text-teal-300" : "text-teal-700"
-        }`}>
+      <div
+        className={`p-6 rounded-xl shadow-lg max-w-md w-full mx-4 ${
+          isDarkMode
+            ? "bg-gradient-to-br from-gray-700 to-gray-800 border border-gray-600"
+            : "bg-gradient-to-br from-white to-gray-100 border border-gray-200"
+        }`}
+      >
+        <h3
+          className={`text-2xl font-bold mb-4 ${
+            isDarkMode ? "text-teal-300" : "text-teal-700"
+          }`}
+        >
           {isFailed ? "Results" : "🎉 Congratulations!"}
         </h3>
         <p className={`mb-6 ${isDarkMode ? "text-gray-200" : "text-gray-700"}`}>
           {message}
         </p>
         <div className={`flex ${isIntermediate ? "justify-between" : "justify-end"}`}>
-          {/* Show Replay button only for failed or intermediate cases */}
           {(isFailed || isIntermediate) && (
             <button
               onClick={onReplay}
@@ -89,8 +89,6 @@ const CertificationPopup: React.FC<CertificationPopupProps> = ({
               Replay
             </button>
           )}
-          
-          {/* Show Continue button for excellent or intermediate cases */}
           {(isExcellent || isIntermediate) && (
             <button
               onClick={onContinue}
@@ -109,414 +107,300 @@ const CertificationPopup: React.FC<CertificationPopupProps> = ({
   );
 };
 
-const extractClauses = (documentText: string) => {
-  const sections = documentText.split("<h2");
-  const clauses: string[] = [];
-  sections.forEach((section) => {
-    if (section.includes("[")) {
-      clauses.push(`<h2${section}`);
-    }
-  });
-  return clauses;
-};
-
-const mapQuestionsToClauses = (
-  clauses: string[],
-  textTypes: { [key: string]: string },
-  numberTypes: { [key: string]: string },
-  dateTypes: { [key: string]: string },
-  radioTypes: { [key: string]: string }
-) => {
-  const questionClauseMap: { [key: string]: string[] } = {};
-  clauses.forEach((clause) => {
-    Object.keys(textTypes).forEach((key) => {
-      const placeholder = `[${key}]`;
-      if (clause.includes(placeholder)) {
-        if (!questionClauseMap[textTypes[key]]) questionClauseMap[textTypes[key]] = [];
-        questionClauseMap[textTypes[key]].push(clause);
-      }
-    });
-    Object.keys(numberTypes).forEach((key) => {
-      const placeholder = `[${key}]`;
-      if (clause.includes(placeholder)) {
-        if (!questionClauseMap[numberTypes[key]]) questionClauseMap[numberTypes[key]] = [];
-        questionClauseMap[numberTypes[key]].push(clause);
-      }
-    });
-    Object.keys(dateTypes).forEach((key) => {
-      const placeholder = `[${key}]`;
-      if (clause.includes(placeholder)) {
-        if (!questionClauseMap[dateTypes[key]]) questionClauseMap[dateTypes[key]] = [];
-        questionClauseMap[dateTypes[key]].push(clause);
-      }
-    });
-    Object.keys(radioTypes).forEach((key) => {
-      if (clause.includes(key)) {
-        if (!questionClauseMap[radioTypes[key]]) questionClauseMap[radioTypes[key]] = [];
-        questionClauseMap[radioTypes[key]].push(clause);
-      }
-    });
-  });
-  return questionClauseMap;
-};
-
-// Function to remove optional clauses from the initial document text
-const getBaseDocumentText = (fullText: string): string => {
-  let baseText = fullText;
-  const probationSection = baseText.match(/<div>\s*<!--\s*Wrapper for each clause section\s*-->\s*<h2[^>]*>\(PROBATIONARY PERIOD<\/h2>\s*<p>[\s\S]*?\(Optional Clause\)<\/span><\/p>\s*<\/div>/i);
-  if (probationSection) {
-    baseText = baseText.replace(probationSection[0], "");
-  }
-  const pensionSection = baseText.match(/<div>\s*<!--\s*Wrapper for each clause section\s*-->\s*<h2[^>]*>\(PENSION<\/h2>\s*<p>[\s\S]*?<\/p>\s*<\/div>/i);
-  if (pensionSection) {
-    baseText = baseText.replace(pensionSection[0], "");
-  }
-  return baseText;
-};
-
 const Live_Generation = () => {
   const { isDarkMode } = useContext(ThemeContext);
-  const location = useLocation();
   const navigate = useNavigate();
-  const { highlightedTexts } = useHighlightedText();
-  const { selectedTypes, editedQuestions, requiredQuestions, questionOrder } = useQuestionType();
-  const [, setQuestionClauseMap] = React.useState<{ [key: string]: string[] }>({});
-  const [userAnswers, setUserAnswers] = React.useState<{ [key: string]: any }>(initializeUserAnswers(highlightedTexts, selectedTypes));
-  const [skippedQuestions, setSkippedQuestions] = React.useState<string[]>([]);
-  const [agreement, setAgreement] = React.useState<string>(getBaseDocumentText(documentText));
-  const [inputErrors, setInputErrors] = React.useState<{ [key: string]: string }>({});
-  const [showWarning, setShowWarning] = React.useState(false);
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const { highlightedTexts: originalHighlightedTexts } = useHighlightedText();
+  const { selectedTypes: originalSelectedTypes, editedQuestions: originalEditedQuestions, requiredQuestions: originalRequiredQuestions } = useQuestionType();
+  const { determineQuestionType, findPlaceholderByValue } = useQuestionEditContext();
+  const [agreement, setAgreement] = useState<string>(documentText);
+  const [inputErrors, setInputErrors] = useState<{ [key: string]: string }>({});
+  const inputRefs = useRef<(HTMLInputElement | HTMLTextAreaElement | null)[]>([]);
+  const [additionalLocations, setAdditionalLocations] = useState<string[]>([""]);
+  const [userAnswers, setUserAnswers] = useState<{ [key: string]: string | boolean | null | { amount: string; currency: string } }>({});
+  const [highlightedTexts, setHighlightedTexts] = useState<string[]>([]);
+  const [selectedTypes, setLocalSelectedTypes] = useState<(string | null)[]>([]);
+  const [editedQuestions, setLocalEditedQuestions] = useState<string[]>([]);
+  const [requiredQuestions, setLocalRequiredQuestions] = useState<boolean[]>([]);
+  const [showCertificationPopup, setShowCertificationPopup] = useState(false);
+  const [certificationMessage, setCertificationMessage] = useState("");
+  const [showWarning, setShowWarning] = useState(false);
   const { questionnaireScore } = useScore();
-  const [showCertificationPopup, setShowCertificationPopup] = React.useState(false);
-  const [certificationMessage, setCertificationMessage] = React.useState("");
-  const [_,setIsCertified] = React.useState(false);
 
-  console.log("highlightedTexts in Live_Generation:", highlightedTexts);
-  console.log("editedQuestions in Live_Generation:", editedQuestions);
-  console.log("questionOrder in Live_Generation:", questionOrder);
-
-  function initializeUserAnswers(highlightedTexts: string[], selectedTypes: (string | null)[]): { [key: string]: any } {
-    const initialAnswers: { [key: string]: any } = {};
+  function initializeUserAnswers(highlightedTexts: string[], selectedTypes: (string | null)[]): { [key: string]: string | boolean | null | { amount: string; currency: string } } {
+    const initialAnswers: { [key: string]: string | boolean | null | { amount: string; currency: string } } = {};
     highlightedTexts.forEach((text, index) => {
       const { primaryValue } = determineQuestionType(text);
       const type = selectedTypes[index] || "Text";
       if (primaryValue) {
         if (primaryValue === "What's the annual salary?") {
           initialAnswers[primaryValue] = { amount: "", currency: "USD" };
-        } else if (primaryValue === "Specify the holiday pay?") {
-          initialAnswers[primaryValue] = { amount: "", currency: "USD" };
+        } else if (primaryValue === "What is the additional work location?") {
+          initialAnswers[primaryValue] = "";
         } else {
-          initialAnswers[primaryValue] = type === "Radio" ? undefined : "";
+          initialAnswers[primaryValue] = type === "Radio" ? null : "";
         }
       }
     });
-    initialAnswers["What's the notice period?"] = "";
-    initialAnswers["What's the sick pay policy?"] = "";
-    initialAnswers["What's the previous employment start date?"] = "";
-    initialAnswers["What's the overtime pay rate?"] = "";
-    initialAnswers["Who is the HR/Relevant Contact?"] = "";
-    initialAnswers["What's the probation period length?"] = "";
     return initialAnswers;
   }
 
   useEffect(() => {
-    if (!location.state?.startTour) return;
-    const tour = new Shepherd.Tour({
-      defaultStepOptions: {
-        cancelIcon: { enabled: true },
-        classes: "shadow-md bg-purple-dark",
-        scrollTo: { behavior: "smooth", block: "center" },
-      },
-      useModalOverlay: true,
+    const savedOrder = sessionStorage.getItem("questionOrder_2");
+    let questionOrder: number[] = [];
+    if (savedOrder) {
+      questionOrder = JSON.parse(savedOrder);
+    } else {
+      questionOrder = originalHighlightedTexts.map((_, index) => index);
+    }
+
+    const savedTypes = sessionStorage.getItem("selectedQuestionTypes");
+    let types: string[] = [];
+    if (savedTypes) {
+      types = JSON.parse(savedTypes);
+    } else {
+      types = originalHighlightedTexts.map(() => "Text");
+    }
+
+    const savedTypeChanged = sessionStorage.getItem("typeChangedStates");
+    if (savedTypeChanged) {
+    } else {
+    }
+
+    const processedTexts: string[] = [];
+    const questionMap = new Map();
+
+    const isProbationaryClauseSelected = originalHighlightedTexts.some((text) =>
+      text.toLowerCase().includes("probationary period") &&
+      text.includes("[Probation Period Length]") &&
+      text.length > "[Probation Period Length]".length
+    );
+
+    const isAdditionalLocationsClauseSelected = originalHighlightedTexts.some((text) =>
+      text.includes("The Employee may be required to work at [other locations].") ||
+      text.includes("/The Employee may be required to work at [other locations]./")
+    );
+
+    const followUpQuestions = [
+      "What's the probation period length?",
+      "What's the probation extension length?",
+      "How many weeks?",
+      "Who is the HR/Relevant Contact?",
+      "What is the additional work location?",
+    ];
+
+    const filteredQuestions = originalHighlightedTexts.filter((text) => {
+      const { primaryValue } = determineQuestionType(text);
+      const isFollowUp = followUpQuestions.includes(primaryValue || "");
+
+      if (isProbationaryClauseSelected && text === "Probation Period Length") {
+        return false;
+      }
+
+      if (text === "other locations" && !isAdditionalLocationsClauseSelected) {
+        return false;
+      }
+
+      const shouldInclude =
+        text === "USA" ||
+        text.includes("The Employee may be required to work at [other locations].") ||
+        (text === "other locations" && isAdditionalLocationsClauseSelected) ||
+        (primaryValue === "What's the probation period length?" &&
+          text === "Probation Period Length" &&
+          !isProbationaryClauseSelected) ||
+        (!isFollowUp && text !== "other locations" && !text.includes("The Employee may be required to work at [other locations]."));
+
+      return shouldInclude;
     });
 
-    tour.addStep({
-      id: "welcome",
-      text: "Welcome to the Live Document Generation Page! Here, you can answer questions and see the document update in real-time.",
-      attachTo: { element: "body", on: "bottom-start" },
-      classes: "shepherd-theme-arrows",
-      buttons: [{ text: "Next →", action: tour.next }],
-    });
-
-    tour.addStep({
-      id: "questions-section",
-      text: "<strong>Answer the questions here. </strong> Your answers will automatically update the document on the right.",
-      attachTo: { element: "#questions-section", on: "bottom" },
-      buttons: [{ text: "Next →", action: tour.next }],
-    });
-
-    tour.addStep({
-      id: "document-preview",
-      text: "This is the live document preview. It updates as you answer the questions.",
-      attachTo: { element: "#document-preview", on: "bottom" },
-      classes: "shepherd-theme-arrows",
-      buttons: [{ text: "Next →", action: tour.next }],
-    });
-
-    tour.addStep({
-      id: "finish-button",
-      text: "Once you've answered all questions, click 'Finish' 🎯 to generate the final document.",
-      attachTo: { element: "#finish-button", on: "bottom" },
-      classes: "introjs-tooltip-bottom-center",
-      buttons: [{ text: "Done", action: tour.complete }],
-    });
-
-    tour.start();
-
-    return () => {
-      tour.complete();
-    };
-  }, [location.state]);
-
-  useEffect(() => {
-    const clauses = extractClauses(documentText);
-    const map = mapQuestionsToClauses(clauses, textTypes, numberTypes, dateTypes, radioTypes);
-    setQuestionClauseMap(map);
-  }, []);
-
-  useEffect(() => {
-    const skipped = [];
-    if ("Is the sick pay policy applicable?" in userAnswers) {
-      const isSickPayApplicable = userAnswers["Is the sick pay policy applicable?"] as boolean | undefined;
-      if (isSickPayApplicable !== true) skipped.push("What's the sick pay policy?");
-    }
-    if ("Is the previous service applicable?" in userAnswers) {
-      const isPrevApplicable = userAnswers["Is the previous service applicable?"] as boolean | undefined;
-      if (isPrevApplicable !== true) skipped.push("What's the previous employment start date?");
-    }
-    if ("Does the employee receive overtime payment?" in userAnswers) {
-      const isOvertimeApplicable = userAnswers["Does the employee receive overtime payment?"] as boolean | undefined;
-      if (isOvertimeApplicable !== true) skipped.push("What's the overtime pay rate?");
-    }
-    if ("Is the Pension clause applicable?" in userAnswers) {
-      const isPensionApplicable = userAnswers["Is the Pension clause applicable?"] as boolean | undefined;
-      if (isPensionApplicable !== true) skipped.push("Who is the HR/Relevant Contact?");
-    }
-    if ("Is the clause of probationary period applicable?" in userAnswers) {
-      const isProbationApplicable = userAnswers["Is the clause of probationary period applicable?"] as boolean | undefined;
-      if (isProbationApplicable !== true) skipped.push("What's the probation period length?");
-    }
-    if ("Would unused holidays would be paid for if employee is termination?" in userAnswers) {
-      const isUnusedHolidaysApplicable = userAnswers["Would unused holidays would be paid for if employee is termination?"] as boolean | undefined;
-      if (isUnusedHolidaysApplicable !== true) {
-        skipped.push("Specify the holiday pay?");
-        skipped.push("Specify the number of unused holidays?");
+    for (const text of filteredQuestions) {
+      const { primaryValue } = determineQuestionType(text);
+      const displayValue = primaryValue || text;
+      if (displayValue && !questionMap.has(displayValue)) {
+        questionMap.set(displayValue, text);
+        processedTexts.push(text);
       }
     }
-    setSkippedQuestions(skipped);
-  }, [userAnswers]);
+
+    if (originalHighlightedTexts.includes("USA") && !processedTexts.includes("USA")) {
+      processedTexts.push("USA");
+    }
+
+    const orderedTexts: string[] = [];
+    const smallConditionText = "The Employee may be required to work at [other locations].";
+    const followUpText = "other locations";
+
+    filteredQuestions.forEach((text) => {
+      if (text.includes(smallConditionText) || text === "/The Employee may be required to work at [other locations]./") {
+        orderedTexts.push(text);
+        if (originalHighlightedTexts.includes(followUpText) && !orderedTexts.includes(followUpText)) {
+          orderedTexts.push(followUpText);
+        }
+      } else if (text !== followUpText) {
+        orderedTexts.push(text);
+      }
+    });
+
+    const reorderedHighlightedTexts = questionOrder
+      .map((index) => orderedTexts[index])
+      .filter((text) => text !== undefined);
+    const reorderedSelectedTypes = questionOrder
+      .map((index) => types[index] ?? "Text")
+      .filter((type) => type !== undefined);
+    const reorderedEditedQuestions = questionOrder
+      .map((index) => originalEditedQuestions[index] || determineQuestionType(orderedTexts[index]).primaryValue || "No text selected")
+      .filter((text) => text !== undefined);
+    const reorderedRequiredQuestions = questionOrder
+      .map((index) => originalRequiredQuestions[index] ?? false)
+      .filter((req) => req !== undefined);
+
+    setHighlightedTexts(reorderedHighlightedTexts);
+    setLocalSelectedTypes(reorderedSelectedTypes);
+    setLocalEditedQuestions(reorderedEditedQuestions);
+    setLocalRequiredQuestions(reorderedRequiredQuestions);
+
+    const initial = initializeUserAnswers(reorderedHighlightedTexts, reorderedSelectedTypes);
+    setUserAnswers(initial);
+  }, [originalHighlightedTexts, originalSelectedTypes, originalEditedQuestions, originalRequiredQuestions]);
 
   useEffect(() => {
-    let updatedText = getBaseDocumentText(documentText);
+    let updatedText = documentText;
 
-    const probationSection = `
-      <div>
-        <!-- Wrapper for each clause section -->
-        <h2 className="text-2xl font-bold mt-6">(PROBATIONARY PERIOD</h2>
-        <p>The first [Probation Period Length]* months of employment will be a probationary period. The Company shall assess the Employee's performance and suitability during this time. Upon successful completion, the Employee will be confirmed in their role.) <span className="text-black font-bold">(Optional Clause)</span></p>
-      </div>
-    `;
-    const pensionSection = `
-      <div>
-        <!-- Wrapper for each clause section -->
-        <h2 className="text-2xl font-bold mt-6">(PENSION</h2>
-        <p>The Employee will be enrolled in the Company's pension scheme in accordance with auto-enrolment legislation.)</p>
-      </div>
-    `;
+    updatedText = updatedText.replace(
+      /\(\/The Employee may be required to work at \[other locations\]\.\/\)/gi,
+      ""
+    );
+
+    const probationAnswer = userAnswers["Is the clause of probationary period applicable?"];
+    if (probationAnswer === null || probationAnswer === false) {
+      updatedText = updatedText.replace(
+        /<h2[^>]*>[^<]*PROBATIONARY PERIOD[^<]*<\/h2>\s*<p[^>]*>[\s\S]*?<\/p>/i,
+        ""
+      );
+    }
+
+    const pensionAnswer = userAnswers["Is the Pension clause applicable?"];
+    if (pensionAnswer === null || pensionAnswer === false) {
+      updatedText = updatedText.replace(
+        /<h2[^>]*>[^<]*PENSION[^<]*<\/h2>\s*<p[^>]*>[\s\S]*?<\/p>/i,
+        ""
+      );
+    }
+
+    const additionalLocationsAnswer = userAnswers["Does the employee need to work at additional locations besides the normal place of work?"];
+    if (additionalLocationsAnswer === false) {
+      // Condition is already hidden
+    } else if (additionalLocationsAnswer === true) {
+      const locationsAnswer = userAnswers["What is the additional work location?"] as string;
+      let formattedLocations = "";
+      if (locationsAnswer) {
+        const locationsArray = locationsAnswer
+          .split(/\s*,\s*|\s*and\s*|\s*, and\s*/)
+          .filter(Boolean);
+        if (locationsArray.length === 1) {
+          formattedLocations = locationsArray[0];
+        } else if (locationsArray.length === 2) {
+          formattedLocations = locationsArray.join(" and ");
+        } else {
+          formattedLocations = `${locationsArray.slice(0, -1).join(", ")}, and ${locationsArray[locationsArray.length - 1]}`;
+        }
+      } else {
+        formattedLocations = "[other locations]";
+      }
+      updatedText = updatedText.replace(
+        /\[other locations\]/gi,
+        `<span class="${isDarkMode ? "bg-teal-600/70 text-teal-100" : "bg-teal-200/70 text-teal-900"} px-1 rounded">${formattedLocations}</span>`
+      );
+    }
 
     Object.entries(userAnswers).forEach(([question, answer]) => {
-      console.log(`Processing question: ${question}, answer: ${answer}`);
-  
-      if (question === "Is the clause of probationary period applicable?") {
-        if (answer === true) {
-          const jobTitleIndex = updatedText.indexOf('<h2 className="text-2xl font-bold mt-6">JOB TITLE AND DUTIES</h2>');
-          if (jobTitleIndex !== -1) {
-            updatedText = updatedText.slice(0, jobTitleIndex) + probationSection + updatedText.slice(jobTitleIndex);
-          } else {
-            updatedText += probationSection;
-          }
-        } else if (answer === false) {
-          // Remove the entire probationary period section
-          updatedText = updatedText.replace(
-            /<div>\s*<!--\s*Wrapper for each clause section\s*-->\s*<h2[^>]*>\(PROBATIONARY PERIOD<\/h2>\s*<p>[\s\S]*?\(Optional Clause\)<\/span><\/p>\s*<\/div>/gi,
-            ""
-          );
-        }
-      }
-
-      if (question === "Is the Pension clause applicable?") {
-        if (answer === true) {
-          const terminationIndex = updatedText.indexOf('<h2 className="text-2xl font-bold mt-6">TERMINATION CLAUSE</h2>');
-          if (terminationIndex !== -1) {
-            updatedText = updatedText.slice(0, terminationIndex) + pensionSection + updatedText.slice(terminationIndex);
-          } else {
-            updatedText += pensionSection;
-          }
-        }
-      }
-
+      const placeholder = findPlaceholderByValue(question);
       if (question === "Is the employee entitled to overtime work?") {
-        const overtimeYesClause = "{The Employee is entitled to overtime pay for authorized overtime work}";
-        const overtimeNoClause = "{The Employee shall not receive additional payment for overtime worked}";
+        const overtimeYesClause = "{The Employee is entitled to overtime pay for authorized overtime work.}";
+        const overtimeNoClause = "{The Employee shall not receive additional payment for overtime worked.}";
 
         updatedText = updatedText.replace(
           /<p className="mt-5" id="employment-agreement-working-hours">([\s\S]*?)<\/p>/i,
           () => {
             let replacementText = "";
-
             if (answer === true) {
               replacementText = `${overtimeYesClause}`;
             } else if (answer === false) {
               replacementText = `${overtimeNoClause}`;
             }
-
             return `<p className="mt-5" id="employment-agreement-working-hours">${replacementText}</p>`;
           }
         );
+        return;
       }
-      if (question === "Is the Employee required to perform additional duties as part of their employment?") {
-        const rawClause = "The Employee may be required to perform additional duties as reasonably assigned by the Company.";
-
-        const flexibleClauseRegex = new RegExp(
-          `[\\{]?\\s*${rawClause.split(" ").map(word => `${word}\\s*`).join("")}[\\}]?`,
-          "g"
-        );
-
-        updatedText = updatedText.replace(flexibleClauseRegex, "");
-
-        if (answer === true) {
-          const jobTitleSectionRegex = /<h2[^>]*>JOB TITLE AND DUTIES<\/h2>\s*<p[^>]*>([\s\S]*?)<\/p>/i;
-          const match = updatedText.match(jobTitleSectionRegex);
-
-          if (match) {
-            const existingText = match[1].trim();
-            const clauseToInsert = ` {${rawClause}}`;
-            const updatedParagraph = existingText + clauseToInsert;
-            updatedText = updatedText.replace(match[0], match[0].replace(existingText, updatedParagraph));
+      if (placeholder === "Unused Holiday Days" && typeof answer === "string") {
+        const storedOperationType = localStorage.getItem("operationType");
+        const storedOperationValue = localStorage.getItem("operationValue");
+        const operationValue = storedOperationValue ? parseFloat(storedOperationValue) : null;
+        let calculatedValue: number | null = null;
+        const floatAnswer = parseFloat(answer).toFixed(2);
+        const numericAnswer = parseFloat(floatAnswer);
+        if (storedOperationType && operationValue !== null) {
+          switch (storedOperationType.toLowerCase()) {
+            case "add":
+              calculatedValue = numericAnswer + operationValue;
+              break;
+            case "subtract":
+              calculatedValue = numericAnswer - operationValue;
+              break;
+            case "multiply":
+              calculatedValue = numericAnswer * operationValue;
+              break;
+            case "divide":
+              calculatedValue = operationValue !== 0 ? numericAnswer / operationValue : null;
+              break;
+            default:
+              calculatedValue = null;
           }
         }
-      }
+        localStorage.setItem("calculatedValue", calculatedValue !== null ? String(calculatedValue) : "0");
 
-      if (question === "Would unused holidays would be paid for if employee is termination?") {
-        const rawClause = "Upon termination, unused leave will be paid. For [Unused Holiday Days] unused days, the holiday pay is [Holiday Pay] [USD].";
-
-        const flexibleClauseRegex = new RegExp(
-          `[\\{]?\\s*${rawClause.split(" ").map(word => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*').join('')}[\\}]?`,
-          "g"
+        updatedText = updatedText.replace(
+          new RegExp("\\[Holiday Pay\\]", "gi"),
+          `<span class="${isDarkMode ? "bg-teal-600/70 text-teal-100" : "bg-teal-200/70 text-teal-900"} px-1 rounded">${calculatedValue}</span>`
         );
-
-        updatedText = updatedText.replace(flexibleClauseRegex, "");
-
-        if (answer === true) {
-          const holidaySectionRegex = /<h2[^>]*>HOLIDAY ENTITLEMENT<\/h2>\s*<p[^>]*>([\s\S]*?)<\/p>/i;
-          const match = updatedText.match(holidaySectionRegex);
-
-          if (match) {
-            const existingText = match[1].trim();
-            let modifiedClause = rawClause;
-
-            // Replace the placeholders with actual values if they exist
-            const unusedHolidaysAnswer = userAnswers["Specify the number of unused holidays?"];
-            const holidayPayAnswer = userAnswers["Specify the holiday pay?"] as { amount: string; currency: string } | undefined;
-
-            if (unusedHolidaysAnswer) {
-              modifiedClause = modifiedClause.replace(
-                "[Unused Holiday Days]",
-                `<span class="${isDarkMode ? "bg-teal-600/70 text-teal-100" : "bg-teal-200/70 text-teal-900"} px-1 rounded">${unusedHolidaysAnswer}</span>`
-              );
-            }
-
-            if (holidayPayAnswer?.amount) {
-              const formattedHolidayPay = `${holidayPayAnswer.amount} ${holidayPayAnswer.currency}`;
-              modifiedClause = modifiedClause.replace(
-                "[Holiday Pay]",
-                `<span class="${isDarkMode ? "bg-teal-600/70 text-teal-100" : "bg-teal-200/70 text-teal-900"} px-1 rounded">${formattedHolidayPay}</span>`
-              );
-              modifiedClause = modifiedClause.replace("[USD]", "");
-            }
-
-            const clauseToInsert = ` {${modifiedClause}}`;
-            const updatedParagraph = existingText + clauseToInsert;
-            updatedText = updatedText.replace(match[0], match[0].replace(existingText, updatedParagraph));
-          }
-        }
       }
-
-      if (question === "Would the Employee be entitled to Company Sick Pay?") {
-        const rawClause = "The Employee may also be entitled to Company sick pay.";
-
-        const flexibleClauseRegex = new RegExp(
-          `[\\{]?\\s*${rawClause.split(" ").map(word => word.replace(/[.*+?^=!:${}()|\[\]\/\\]/g, "\\$&") + "\\s*").join("")}[\\}]?`,
-          "g"
-        );
-
-        updatedText = updatedText.replace(flexibleClauseRegex, "");
-
-        if (answer === true) {
-          const sickPaySectionRegex = /<h2[^>]*>SICKNESS ABSENCE<\/h2>\s*<p[^>]*>([\s\S]*?)<\/p>/i;
-          const match = updatedText.match(sickPaySectionRegex);
-
-          if (match) {
-            const existingText = match[1].trim();
-            const clauseToInsert = ` {${rawClause}}`;
-            const updatedParagraph = existingText + clauseToInsert;
-            updatedText = updatedText.replace(match[0], match[0].replace(existingText, updatedParagraph));
-          }
-        }
-      }
-
-      if (question === "Does the employee need to work at additional locations besides the normal place of work?") {
-        const rawClause = "/The Employee may be required to work at [other locations]./";
-
-        const flexibleClauseRegex = new RegExp(
-          `[\\{]?\\s*${rawClause.split(" ").map(word => word.replace(/[.*+?^=!:${}()|\[\]\/\\]/g, "\\$&") + "\\s*").join("")}[\\}]?`,
-          "g"
-        );
-
-        updatedText = updatedText.replace(flexibleClauseRegex, "");
-
-        if (answer === true) {
-          const placeOfWorkRegex = /<h2[^>]*>PLACE OF WORK<\/h2>\s*<p[^>]*>([\s\S]*?)<\/p>/i;
-          const match = updatedText.match(placeOfWorkRegex);
-
-          if (match) {
-            const existingText = match[1].trim();
-            const clauseToInsert = ` {${rawClause}}`;
-            const updatedParagraph = existingText + clauseToInsert;
-            updatedText = updatedText.replace(match[0], match[0].replace(existingText, updatedParagraph));
-          }
-        }
-      }
-
-      const placeholder = findPlaceholderByValue(question);
 
       if (placeholder) {
         const escapedPlaceholder = placeholder.replace(/[.*+?^=!:${}()|\[\]\/\\]/g, "\\$&");
         if (question === "What's the annual salary?") {
-          const salaryData = userAnswers[question] || { amount: "[Annual Salary]", currency: "USD" };
-          const formattedSalary = `${salaryData.amount} ${salaryData.currency}`;
+          const salaryData = answer as { amount: string; currency: string } | undefined;
           updatedText = updatedText.replace(
-            new RegExp(`\\[${escapedPlaceholder}\\]\\*`, "gi"),
-            `<span class="${isDarkMode ? "bg-teal-600/70 text-teal-100" : "bg-teal-200/70 text-teal-900"} px-1 rounded">${formattedSalary}</span>`
+            new RegExp(`\\[${escapedPlaceholder}\\]`, "gi"),
+            `<span class="${isDarkMode ? "bg-teal-600/70 text-teal-100" : "bg-teal-200/70 text-teal-900"} px-1 rounded">${salaryData?.amount || "[Annual Salary]"}</span>`
           );
-          updatedText = updatedText.replace("[USD]*", "");
-        } else if (typeof answer === "boolean" && question !== "Is the clause of probationary period applicable?" && question !== "Is the Pension clause applicable?") {
           updatedText = updatedText.replace(
-            new RegExp(`\\[${escapedPlaceholder}\\]\\*`, "gi"),
-            answer ? "Yes" : "No"
+            new RegExp(`\\[USD\\]`, "gi"),
+            `<span class="${isDarkMode ? "bg-teal-600/70 text-teal-100" : "bg-teal-200/70 text-teal-900"} px-1 rounded">${salaryData?.currency || "[USD]"}</span>`
           );
-        } else if (typeof answer === "string" && answer.trim()) {
-          const occurrences = (updatedText.match(new RegExp(`\\[${escapedPlaceholder}\\]\\*`, "gi")) || []).length;
-          for (let i = 0; i < occurrences; i++) {
+        } else if (question === "What is the governing country?") {
+          const countryAnswer = typeof answer === "string" && answer.trim() ? answer : "[USA]";
+          updatedText = updatedText.replace(
+            new RegExp(`\\[USA\\]`, "gi"),
+            `<span class="${isDarkMode ? "bg-teal-600/70 text-teal-100" : "bg-teal-200/70 text-teal-900"} px-1 rounded">${countryAnswer}</span>`
+          );
+        } else if (typeof answer === "boolean" || answer === null) {
+          if (!answer && placeholder !== "other locations") {
+            updatedText = updatedText.replace(new RegExp(`.*${escapedPlaceholder}.*`, "gi"), "");
+          } else {
             updatedText = updatedText.replace(
-              new RegExp(`\\[${escapedPlaceholder}\\]\\*`, "i"),
-              `<span class="${isDarkMode ? "bg-teal-600/70 text-teal-100" : "bg-teal-200/70 text-teal-900"} px-1 rounded">${answer}</span>`
+              new RegExp(`\\[${escapedPlaceholder}\\]`, "gi"),
+              answer ? "Yes" : "No"
             );
           }
-        } else {
+        } else if (typeof answer === "string" && answer.trim() && question !== "What is the additional work location?") {
           updatedText = updatedText.replace(
-            new RegExp(`\\[${escapedPlaceholder}\\]\\*`, "gi"),
+            new RegExp(`\\[${escapedPlaceholder}\\]`, "gi"),
+            `<span class="${isDarkMode ? "bg-teal-600/70 text-teal-100" : "bg-teal-200/70 text-teal-900"} px-1 rounded">${answer}</span>`
+          );
+        } else if (question !== "What is the additional work location?") {
+          updatedText = updatedText.replace(
+            new RegExp(`\\[${escapedPlaceholder}\\]`, "gi"),
             `[${placeholder}]`
           );
         }
@@ -531,17 +415,8 @@ const Live_Generation = () => {
               `<span class="${isDarkMode ? "bg-teal-600/70 text-teal-100" : "bg-teal-200/70 text-teal-900"} px-1 rounded">${userAnswers["What's the sick pay policy?"] as string}</span>`
             );
           }
-        } else if (question === "Is the clause of probationary period applicable?") {
-          if (answer === false) {
-            // Remove entire PROBATIONARY PERIOD section (h2 + p)
-            updatedText = updatedText.replace(
-              /<h2[^>]*>[^<]*PROBATIONARY PERIOD[^<]*<\/h2>\s*<p[^>]*>[\s\S]*?<\/p>/i,
-              ""
-            );
-          }
         } else if (question === "Is the termination clause applicable?") {
           if (answer === false) {
-            // Find and remove only the termination clause content while keeping the section
             const terminationSection = updatedText.match(/<h2[^>]*>TERMINATION<\/h2>\s*<p[^>]*>([\s\S]*?)<\/p>/i);
             if (terminationSection) {
               const sectionWithoutClause = terminationSection[0].replace(/\(After the probationary period.*?gross misconduct\.\)/, '');
@@ -558,44 +433,12 @@ const Live_Generation = () => {
           updatedText = updatedText.replace(new RegExp(`\\s*${prevEmploymentClause.replace(/[.*+?^=!:${}()|\[\]\/\\]/g, "\\$&")}\\s*`, "gi"), "");
         }
       }
-
-      // Handle the Unused Holiday Days placeholder
-      if (question === "Specify the number of unused holidays?") {
-        const escapedPlaceholder = "Unused Holiday Days".replace(/[.*+?^=!:${}()|\[\]\/\\]/g, "\\$&");
-        if (typeof answer === "string" && answer.trim()) {
-          updatedText = updatedText.replace(
-            new RegExp(`\\[${escapedPlaceholder}\\]\\*`, "gi"),
-            `<span class="${isDarkMode ? "bg-teal-600/70 text-teal-100" : "bg-teal-200/70 text-teal-900"} px-1 rounded">${answer}</span>`
-          );
-        } else {
-          updatedText = updatedText.replace(
-            new RegExp(`\\[${escapedPlaceholder}\\]\\*`, "gi"),
-            "[Unused Holiday Days]"
-          );
-        }
-      }
-
-      // Handle the Holiday Pay placeholder
-      if (question === "What's the holiday pay amount?") {
-        const escapedPlaceholder = "Holiday Pay".replace(/[.*+?^=!:${}()|\[\]\/\\]/g, "\\$&");
-        if (typeof answer === "string" && answer.trim()) {
-          updatedText = updatedText.replace(
-            new RegExp(`\\[${escapedPlaceholder}\\]\\*`, "gi"),
-            `<span class="${isDarkMode ? "bg-teal-600/70 text-teal-100" : "bg-teal-200/70 text-teal-900"} px-1 rounded">${answer}</span>`
-          );
-        } else {
-          updatedText = updatedText.replace(
-            new RegExp(`\\[${escapedPlaceholder}\\]\\*`, "gi"),
-            "[Holiday Pay]"
-          );
-        }
-      }
     });
 
     setAgreement(updatedText + " ");
   }, [userAnswers, isDarkMode]);
 
-  const validateInput = (type: string, value: string, _question: string): string => {
+  const validateInput = (type: string, value: string): string => {
     if (!value) return "";
     switch (type) {
       case "Number":
@@ -622,305 +465,380 @@ const Live_Generation = () => {
     return "";
   };
 
-  const renderAnswerInput = useCallback((originalIndex: number, displayIndex: number) => {
-    const text = highlightedTexts[originalIndex];
-    const { primaryValue } = determineQuestionType(text);
+  const handleAnswerChange = useCallback(
+    (
+      index: number,
+      value: string | boolean | { amount: string; currency: string },
+      followUpQuestion?: string,
+      isAdditional?: boolean,
+      locationIndex?: number
+    ) => {
+      const { primaryValue } = determineQuestionType(highlightedTexts[index] || "");
+      if (!primaryValue) return;
+
+      const currentType = selectedTypes[index] || "Text";
+
+      if (typeof value === "string" && currentType !== "Radio" && primaryValue !== "What's the annual salary?") {
+        const error = validateInput(currentType, value);
+        setInputErrors((prev) => ({
+          ...prev,
+          [primaryValue]: error,
+        }));
+      }
+
+      if (isAdditional && locationIndex !== undefined) {
+        setAdditionalLocations((prev) => {
+          const updated = [...prev];
+          updated[locationIndex] = value as string;
+          return updated;
+        });
+        setUserAnswers((prev) => {
+          const locations = additionalLocations
+            .map((loc, idx) => (idx === locationIndex ? (value as string) : loc))
+            .filter(Boolean);
+          const formattedLocations =
+            locations.length === 1
+              ? locations[0]
+              : locations.length === 2
+              ? locations.join(" and ")
+              : `${locations.slice(0, -1).join(", ")}, and ${locations[locations.length - 1]}`;
+          return {
+            ...prev,
+            [primaryValue]: formattedLocations,
+          };
+        });
+      } else {
+        setUserAnswers((prev) => {
+          const newAnswers = {
+            ...prev,
+            [primaryValue]: value,
+          };
+          if (followUpQuestion && value === true) {
+            newAnswers[followUpQuestion] = "";
+          }
+          return newAnswers;
+        });
+      }
+    },
+    [highlightedTexts, selectedTypes, additionalLocations]
+  );
+
+  const handleAddMore = () => {
+    setAdditionalLocations((prev) => [...prev, ""]);
+  };
+
+  const renderAnswerInput = (index: number) => {
+    const questionText = highlightedTexts[index] || "";
+    const { primaryValue } = determineQuestionType(questionText);
     if (!primaryValue) return null;
 
-    const isRequired = requiredQuestions[originalIndex] || false;
-    const currentType = selectedTypes[originalIndex] || "Text";
-    const questionText = editedQuestions[originalIndex] || primaryValue;
-    const answer = userAnswers[primaryValue];
-    const error = inputErrors[primaryValue];
+    const currentType = selectedTypes[index] || "Text";
+    const answer = userAnswers[primaryValue] !== undefined ? userAnswers[primaryValue] : (currentType === "Radio" ? null : "");
+    const error = inputErrors[primaryValue] || "";
+    const isRequired = requiredQuestions[index] || false;
 
-    // Handle both Annual Salary and Holiday Pay with currency dropdown
-    if (primaryValue === "What's the annual salary?" || primaryValue === "Specify the holiday pay?") {
-      const answerWithCurrency = answer as { amount: string; currency: string } | undefined;
-      const amount = answerWithCurrency?.amount || "";
-      const currency = answerWithCurrency?.currency || "USD";
-
+    if (primaryValue === "Does the employee need to work at additional locations besides the normal place of work?") {
       return (
-        <div key={originalIndex} id="questions-section" className="mb-6">
-          <label className={`block text-lg font-medium mb-2 ${isDarkMode ? "text-teal-300" : "text-teal-700"}`}>
-            {questionText} {isRequired && <span className="text-red-500">*</span>}
-          </label>
-          <div className="flex items-center space-x-4">
-            <input
-              type="number"
-              value={amount}
-              onChange={(e) => {
-                const value = e.target.value;
-                setUserAnswers((prev) => ({
-                  ...prev,
-                  [primaryValue]: { ...prev[primaryValue], amount: value },
-                }));
-                const error = validateInput("Number", value, primaryValue);
-                setInputErrors((prev) => ({ ...prev, [primaryValue]: error }));
-              }}
-              ref={(el) => {
-                inputRefs.current[displayIndex] = el;
-              }}
-              className={`p-3 w-1/2 rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${
-                isDarkMode
-                  ? `bg-gray-700/80 border ${error ? "border-red-400" : "border-teal-600"} focus:ring-teal-400 text-teal-200 placeholder-teal-300/70`
-                  : `bg-white/80 border ${error ? "border-red-400" : "border-teal-200"} focus:ring-teal-500 text-teal-800 placeholder-teal-400/70`
-              }`}
-              placeholder="Enter amount"
-            />
-            <select
-              value={currency}
-              onChange={(e) => {
-                setUserAnswers((prev) => ({
-                  ...prev,
-                  [primaryValue]: { ...prev[primaryValue], currency: e.target.value },
-                }));
-              }}
-              className={`p-3 rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${
-                isDarkMode
-                  ? "bg-gray-700/80 border border-teal-600 focus:ring-teal-400 text-teal-200"
-                  : "bg-white/80 border border-teal-200 focus:ring-teal-500 text-teal-800"
-              }`}
-            >
-              <option value="USD">USD</option>
-              <option value="EUR">EUR</option>
-              <option value="GBP">GBP</option>
-              <option value="INR">INR</option>
-              <option value="SEK">SEK</option>
-              <option value="AUD">AUD</option>
-              <option value="JPY">JPY</option>
-              <option value="CAD">CAD</option>
-              <option value="CHF">CHF</option>
-            </select>
-          </div>
-          {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-        </div>
-      );
-    }
-
-    // Handle Radio type questions
-    if (currentType === "Radio") {
-      return (
-        <div key={originalIndex} id="questions-section" className="mb-6">
-          <label className={`block text-lg font-medium mb-2 ${isDarkMode ? "text-teal-300" : "text-teal-700"}`}>
-            {questionText} {isRequired && <span className="text-red-500">*</span>}
-          </label>
-          <div className="flex space-x-6">
-            <label className="flex items-center space-x-2">
+        <div key={index} className="mb-12">
+          <p className={`text-lg font-medium ${isDarkMode ? "text-teal-200" : "text-teal-900"}`}>
+            {editedQuestions[index] || primaryValue}
+            {isRequired && <span className="text-red-500 ml-2">*</span>}
+          </p>
+          <div className="mt-4 flex space-x-6">
+            <label className={`flex items-center space-x-2 cursor-pointer ${isDarkMode ? "text-teal-300" : "text-teal-700"}`}>
               <input
                 type="radio"
-                name={primaryValue}
                 checked={answer === true}
-                onChange={() => {
-                  setUserAnswers((prev) => ({ ...prev, [primaryValue]: true }));
-                  setInputErrors((prev) => ({ ...prev, [primaryValue]: "" }));
-                }}
-                className={`form-radio h-5 w-5 ${isDarkMode ? "text-teal-400" : "text-teal-600"} focus:ring-0`}
+                onChange={() => handleAnswerChange(index, true, "What is the additional work location?")}
+                className={`cursor-pointer ${isDarkMode ? "text-teal-500 focus:ring-teal-400" : "text-teal-600 focus:ring-teal-500"}`}
+                required={isRequired}
               />
-              <span className={isDarkMode ? "text-teal-200" : "text-teal-800"}>Yes</span>
+              <span>Yes</span>
             </label>
-            <label className="flex items-center space-x-2">
+            <label className={`flex items-center space-x-2 cursor-pointer ${isDarkMode ? "text-teal-300" : "text-teal-700"}`}>
               <input
                 type="radio"
-                name={primaryValue}
                 checked={answer === false}
-                onChange={() => {
-                  setUserAnswers((prev) => ({ ...prev, [primaryValue]: false }));
-                  setInputErrors((prev) => ({ ...prev, [primaryValue]: "" }));
-                }}
-                className={`form-radio h-5 w-5 ${isDarkMode ? "text-teal-400" : "text-teal-600"} focus:ring-0`}
+                onChange={() => handleAnswerChange(index, false)}
+                className={`cursor-pointer ${isDarkMode ? "text-teal-500 focus:ring-teal-400" : "text-teal-600 focus:ring-teal-500"}`}
+                required={isRequired}
               />
-              <span className={isDarkMode ? "text-teal-200" : "text-teal-800"}>No</span>
+              <span>No</span>
             </label>
           </div>
-          {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+          {answer === true && highlightedTexts.some((text) => determineQuestionType(text).primaryValue === "What is the additional work location?") && (
+            <div className="mt-6">
+              <p className={`text-lg font-medium ${isDarkMode ? "text-teal-200" : "text-teal-900"}`}>
+                What is the additional work location?
+                {isRequired && <span className="text-red-500 ml-2">*</span>}
+              </p>
+              {additionalLocations.map((location, locIndex) => (
+                <div key={locIndex} className="mt-4">
+                  <input
+                    type="text"
+                    value={location}
+                    onChange={(e) => handleAnswerChange(index + 1, e.target.value, undefined, true, locIndex)}
+                    className={`p-3 w-full rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${
+                      isDarkMode
+                        ? `bg-gray-700/80 border ${error ? "border-red-400" : "border-teal-600"} focus:ring-teal-400 text-teal-200 placeholder-teal-300/70`
+                        : `bg-white/80 border ${error ? "border-red-400" : "border-teal-200"} focus:ring-teal-500 text-teal-800 placeholder-teal-400/70`
+                    }`}
+                    placeholder={`Enter additional location ${locIndex + 1}`}
+                    required={isRequired}
+                  />
+                </div>
+              ))}
+              <div className="flex justify-end mt-4">
+                <button
+                  className={`px-6 py-3 text-white rounded-lg shadow-md transform hover:scale-105 transition-all duration-300 ${
+                    isDarkMode ? "bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800" : "bg-gradient-to-r from-teal-400 to-cyan-400 hover:from-teal-500 hover:to-cyan-500"
+                  }`}
+                  onClick={handleAddMore}
+                >
+                  Add More Locations
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       );
     }
 
-    // Handle Number type questions
-    if (currentType === "Number") {
+    if (primaryValue === "What's the annual salary?") {
+      const answerWithCurrency = typeof answer === "object" && answer !== null && "amount" in answer && "currency" in answer
+        ? answer as { amount: string; currency: string }
+        : { amount: "", currency: "USD" };
+
       return (
-        <div key={originalIndex} id="questions-section" className="mb-6">
-          <label className={`block text-lg font-medium mb-2 ${isDarkMode ? "text-teal-300" : "text-teal-700"}`}>
-            {questionText} {isRequired && <span className="text-red-500">*</span>}
-          </label>
-          <input
-            type="number"
-            value={typeof answer === "string" ? answer : ""}
-            onChange={(e) => {
-              const value = e.target.value;
-              setUserAnswers((prev) => ({ ...prev, [primaryValue]: value }));
-              const error = validateInput(currentType, value, primaryValue);
-              setInputErrors((prev) => ({ ...prev, [primaryValue]: error }));
-            }}
-            ref={(el) => {
-              inputRefs.current[displayIndex] = el;
-            }}
-            className={`p-3 w-full rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${
-              isDarkMode
-                ? `bg-gray-700/80 border ${error ? "border-red-400" : "border-teal-600"} focus:ring-teal-400 text-teal-200 placeholder-teal-300/70`
-                : `bg-white/80 border ${error ? "border-red-400" : "border-teal-200"} focus:ring-teal-500 text-teal-800 placeholder-teal-400/70`
-            }`}
-            placeholder="Enter a number"
-          />
-          {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+        <div key={index} className="mb-12">
+          <div className="w-full">
+            <p className={`text-lg font-medium ${isDarkMode ? "text-teal-200" : "text-teal-900"}`}>
+              {editedQuestions[index] || primaryValue}
+              {isRequired && <span className="text-red-500 ml-2">*</span>}
+            </p>
+            <div className="flex items-center space-x-4 mt-4">
+              <input
+                type="number"
+                value={answerWithCurrency.amount}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  const error = validateInput("Number", value);
+                  setInputErrors((prev) => ({ ...prev, [primaryValue]: error }));
+                  const currentAnswer = userAnswers[primaryValue];
+                  const currentCurrency = typeof currentAnswer === "object" && currentAnswer !== null && "currency" in currentAnswer
+                    ? (currentAnswer as { amount: string; currency: string }).currency
+                    : "USD";
+                  handleAnswerChange(index, { amount: value, currency: currentCurrency });
+                }}
+                ref={(el) => { if (el) inputRefs.current[index] = el; }}
+                className={`p-3 w-1/2 rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${
+                  isDarkMode
+                    ? `bg-gray-700/80 border ${error ? "border-red-400" : "border-teal-600"} focus:ring-teal-400 text-teal-200 placeholder-teal-300/70`
+                    : `bg-white/80 border ${error ? "border-red-400" : "border-teal-200"} focus:ring-teal-500 text-teal-800 placeholder-teal-400/70`
+                }`}
+                placeholder="Enter amount"
+                required={isRequired}
+              />
+              <select
+                value={answerWithCurrency.currency}
+                onChange={(e) => {
+                  handleAnswerChange(index, { amount: answerWithCurrency.amount, currency: e.target.value });
+                }}
+                className={`p-3 rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${
+                  isDarkMode
+                    ? "bg-gray-700/80 border border-teal-600 focus:ring-teal-400 text-teal-200"
+                    : "bg-white/80 border border-teal-200 focus:ring-teal-500 text-teal-800"
+                }`}
+                required={isRequired}
+              >
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="GBP">GBP</option>
+                <option value="INR">INR</option>
+                <option value="SEK">SEK</option>
+                <option value="AUD">AUD</option>
+                <option value="JPY">JPY</option>
+                <option value="CAD">CAD</option>
+                <option value="CHF">CHF</option>
+              </select>
+            </div>
+            {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+          </div>
         </div>
       );
     }
 
-    // Handle Date type questions
-    if (currentType === "Date") {
-      return (
-        <div key={originalIndex} id="questions-section" className="mb-6">
-          <label className={`block text-lg font-medium mb-2 ${isDarkMode ? "text-teal-300" : "text-teal-700"}`}>
-            {questionText} {isRequired && <span className="text-red-500">*</span>}
-          </label>
-          <input
-            type="date"
-            value={typeof answer === "string" ? answer : ""}
-            onChange={(e) => {
-              const value = e.target.value;
-              setUserAnswers((prev) => ({ ...prev, [primaryValue]: value }));
-              const error = validateInput(currentType, value, primaryValue);
-              setInputErrors((prev) => ({ ...prev, [primaryValue]: error }));
-            }}
-            ref={(el) => {
-              inputRefs.current[displayIndex] = el;
-            }}
-            className={`p-3 w-full rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${
-              isDarkMode
-                ? `bg-gray-700/80 border ${error ? "border-red-400" : "border-teal-600"} focus:ring-teal-400 text-teal-200`
-                : `bg-white/80 border ${error ? "border-red-400" : "border-teal-200"} focus:ring-teal-500 text-teal-800`
-            }`}
-          />
-          {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-        </div>
-      );
+    if (primaryValue === "What is the additional work location?") {
+      return null; // Handled within the parent radio question
     }
 
-    // Handle Paragraph type questions
-    if (currentType === "Paragraph") {
-      return (
-        <div key={originalIndex} id="questions-section" className="mb-6">
-          <label className={`block text-lg font-medium mb-2 ${isDarkMode ? "text-teal-300" : "text-teal-700"}`}>
-            {questionText} {isRequired && <span className="text-red-500">*</span>}
-          </label>
-          <textarea
-            value={typeof answer === "string" ? answer : ""}
-            onChange={(e) => {
-              const value = e.target.value;
-              setUserAnswers((prev) => ({ ...prev, [primaryValue]: value }));
-              const error = validateInput(currentType, value, primaryValue);
-              setInputErrors((prev) => ({ ...prev, [primaryValue]: error }));
-            }}
-            className={`p-3 w-full h-32 rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 resize-y ${
-              isDarkMode
-                ? `bg-gray-700/80 border ${error ? "border-red-400" : "border-teal-600"} focus:ring-teal-400 text-teal-200 placeholder-teal-300/70`
-                : `bg-white/80 border ${error ? "border-red-400" : "border-teal-200"} focus:ring-teal-500 text-teal-800 placeholder-teal-400/70`
-            }`}
-            placeholder={`Enter ${primaryValue.toLowerCase()}`}
-          />
-          {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-        </div>
-      );
-    }
-
-    // Default to Text or Email type
     return (
-      <div key={originalIndex} id="questions-section" className="mb-6">
-        <label className={`block text-lg font-medium mb-2 ${isDarkMode ? "text-teal-300" : "text-teal-700"}`}>
-          {questionText} {isRequired && <span className="text-red-500">*</span>}
-        </label>
-        <input
-          type={currentType === "Email" ? "email" : "text"}
-          value={typeof answer === "string" ? answer : ""}
-          onChange={(e) => {
-            const value = e.target.value;
-            setUserAnswers((prev) => ({ ...prev, [primaryValue]: value }));
-            const error = validateInput(currentType, value, primaryValue);
-            setInputErrors((prev) => ({ ...prev, [primaryValue]: error }));
-          }}
-          ref={(el) => {
-            inputRefs.current[displayIndex] = el;
-          }}
-          className={`p-3 w-full rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${
-            isDarkMode
-              ? `bg-gray-700/80 border ${error ? "border-red-400" : "border-teal-600"} focus:ring-teal-400 text-teal-200 placeholder-teal-300/70`
-              : `bg-white/80 border ${error ? "border-red-400" : "border-teal-200"} focus:ring-teal-500 text-teal-800 placeholder-teal-400/70`
-          }`}
-          placeholder={`Enter ${primaryValue.toLowerCase()}`}
-        />
-        {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+      <div key={index} className="mb-12">
+        <div className="w-full">
+          <p className={`text-lg font-medium ${isDarkMode ? "text-teal-200" : "text-teal-900"}`}>
+            {editedQuestions[index] || primaryValue}
+            {isRequired && <span className="text-red-500 ml-2">*</span>}
+          </p>
+          {currentType === "Radio" ? (
+            primaryValue === "Is the sick pay policy applicable?" ? (
+              <>
+                <div className="mt-4 flex space-x-6">
+                  <label className={`flex items-center space-x-2 cursor-pointer ${isDarkMode ? "text-teal-300" : "text-teal-700"}`}>
+                    <input
+                      type="radio"
+                      checked={answer === true}
+                      onChange={() => handleAnswerChange(index, true, "What's the sick pay policy?")}
+                      className={`cursor-pointer ${isDarkMode ? "text-teal-500 focus:ring-teal-400" : "text-teal-600 focus:ring-teal-500"}`}
+                      required={isRequired}
+                    />
+                    <span>Yes</span>
+                  </label>
+                  <label className={`flex items-center space-x-2 cursor-pointer ${isDarkMode ? "text-teal-300" : "text-teal-700"}`}>
+                    <input
+                      type="radio"
+                      checked={answer === false}
+                      onChange={() => handleAnswerChange(index, false)}
+                      className={`cursor-pointer ${isDarkMode ? "text-teal-500 focus:ring-teal-400" : "text-teal-600 focus:ring-teal-500"}`}
+                      required={isRequired}
+                    />
+                    <span>No</span>
+                  </label>
+                </div>
+                {answer === true && (
+                  <input
+                    type="text"
+                    value={(userAnswers["What's the sick pay policy?"] as string) || ""}
+                    onChange={(e) =>
+                      setUserAnswers((prev) => ({
+                        ...prev,
+                        "What's the sick pay policy?": e.target.value,
+                      }))
+                    }
+                    className={`mt-4 p-3 w-full rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${
+                      isDarkMode
+                        ? "bg-gray-700/80 border border-teal-600 focus:ring-teal-400 text-teal-200 placeholder-teal-300/70"
+                        : "bg-white/80 border border-teal-200 focus:ring-teal-500 text-teal-800 placeholder-teal-400/70"
+                    }`}
+                    placeholder="What's the sick pay policy?"
+                    required={isRequired}
+                  />
+                )}
+              </>
+            ) : (
+              <div className="mt-4 flex space-x-6">
+                <label className={`flex items-center space-x-2 cursor-pointer ${isDarkMode ? "text-teal-300" : "text-teal-700"}`}>
+                  <input
+                    type="radio"
+                    checked={answer === true}
+                    onChange={() => handleAnswerChange(index, true)}
+                    className={`cursor-pointer ${isDarkMode ? "text-teal-500 focus:ring-teal-400" : "text-teal-600 focus:ring-teal-500"}`}
+                    required={isRequired}
+                  />
+                  <span>Yes</span>
+                </label>
+                <label className={`flex items-center space-x-2 cursor-pointer ${isDarkMode ? "text-teal-300" : "text-teal-700"}`}>
+                  <input
+                    type="radio"
+                    checked={answer === false}
+                    onChange={() => handleAnswerChange(index, false)}
+                    className={`cursor-pointer ${isDarkMode ? "text-teal-500 focus:ring-teal-400" : "text-teal-600 focus:ring-teal-500"}`}
+                    required={isRequired}
+                  />
+                  <span>No</span>
+                </label>
+              </div>
+            )
+          ) : currentType === "Number" ? (
+            <>
+              <input
+                ref={(el) => { if (el) inputRefs.current[index] = el as HTMLInputElement; }}
+                type="number"
+                value={(userAnswers[primaryValue] as string) || ""}
+                onChange={(e) => handleAnswerChange(index, e.target.value)}
+                className={`mt-4 p-3 w-full rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${
+                  isDarkMode
+                    ? `bg-gray-700/80 border ${error ? "border-red-400" : "border-teal-600"} focus:ring-teal-400 text-teal-200 placeholder-teal-300/70`
+                    : `bg-white/80 border ${error ? "border-red-400" : "border-teal-200"} focus:ring-teal-500 text-teal-800 placeholder-teal-400/70`
+                }`}
+                placeholder="Enter a number"
+                required={isRequired}
+              />
+              {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+            </>
+          ) : currentType === "Date" ? (
+            <>
+              <input
+                ref={(el) => { if (el) inputRefs.current[index] = el as HTMLInputElement; }}
+                type="date"
+                value={(userAnswers[primaryValue] as string) || ""}
+                onChange={(e) => handleAnswerChange(index, e.target.value)}
+                className={`mt-4 p-3 w-full rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${
+                  isDarkMode
+                    ? `bg-gray-700/80 border ${error ? "border-red-400" : "border-teal-600"} focus:ring-teal-400 text-teal-200`
+                    : `bg-white/80 border ${error ? "border-red-400" : "border-teal-200"} focus:ring-teal-500 text-teal-800`
+                }`}
+                placeholder="Select a date"
+                required={isRequired}
+              />
+              {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+            </>
+          ) : currentType === "Email" ? (
+            <>
+              <input
+                ref={(el) => { if (el) inputRefs.current[index] = el as HTMLInputElement; }}
+                type="email"
+                value={(userAnswers[primaryValue] as string) || ""}
+                onChange={(e) => handleAnswerChange(index, e.target.value)}
+                className={`mt-4 p-3 w-full rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${
+                  isDarkMode
+                    ? `bg-gray-700/80 border ${error ? "border-red-400" : "border-teal-600"} focus:ring-teal-400 text-teal-200 placeholder-teal-300/70`
+                    : `bg-white/80 border ${error ? "border-red-400" : "border-teal-200"} focus:ring-teal-500 text-teal-800 placeholder-teal-400/70`
+                }`}
+                placeholder="Enter an email address"
+                required={isRequired}
+              />
+              {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+            </>
+          ) : currentType === "Text" ? (
+            <>
+              <input
+                ref={(el) => { if (el) inputRefs.current[index] = el as HTMLInputElement; }}
+                type="text"
+                value={(userAnswers[primaryValue] as string) || ""}
+                onChange={(e) => handleAnswerChange(index, e.target.value)}
+                className={`mt-4 p-3 w-full rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${
+                  isDarkMode
+                    ? `bg-gray-700/80 border ${error ? "border-red-400" : "border-teal-600"} focus:ring-teal-400 text-teal-200 placeholder-teal-300/70`
+                    : `bg-white/80 border ${error ? "border-red-400" : "border-teal-200"} focus:ring-teal-500 text-teal-800 placeholder-teal-400/70`
+                }`}
+                placeholder="Enter your answer"
+                required={isRequired}
+              />
+              {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+            </>
+          ) : currentType === "Paragraph" ? (
+            <>
+              <textarea
+                ref={(el) => { if (el) inputRefs.current[index] = el as HTMLTextAreaElement; }}
+                value={(userAnswers[primaryValue] as string) || ""}
+                onChange={(e) => handleAnswerChange(index, e.target.value)}
+                className={`mt-4 p-3 w-full rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${
+                  isDarkMode
+                    ? `bg-gray-700/80 border ${error ? "border-red-400" : "border-teal-600"} focus:ring-teal-400 text-teal-200 placeholder-teal-300/70`
+                    : `bg-white/80 border ${error ? "border-red-400" : "border-teal-200"} focus:ring-teal-500 text-teal-800 placeholder-teal-400/70`
+                }`}
+                placeholder="Enter your answer"
+                rows={3}
+                required={isRequired}
+              />
+              {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+            </>
+          ) : (
+            <></>
+          )}
+        </div>
       </div>
     );
-  }, [highlightedTexts, selectedTypes, requiredQuestions, userAnswers, inputErrors, editedQuestions, isDarkMode, validateInput]);
-
-  const areAllRequiredAnswered = () => {
-    for (let displayIndex = 0; displayIndex < questionOrder.length; displayIndex++) {
-      const originalIndex = questionOrder[displayIndex];
-      const { primaryValue } = determineQuestionType(highlightedTexts[originalIndex] || "");
-      const isRequired = requiredQuestions[originalIndex] || false;
-      const currentType = selectedTypes[originalIndex] || "Text";
-      const answer = userAnswers[primaryValue];
-
-      if (isRequired) {
-        if (primaryValue === "What's the annual salary?") {
-          if (!answer?.amount || !answer.amount.trim()) return false;
-        } else if (currentType === "Radio") {
-          if (answer === undefined) return false;
-        } else if (typeof answer === "string" && !answer.trim()) {
-          return false;
-        } else if (inputErrors[primaryValue]) {
-          return false;
-        }
-      }
-
-      if (primaryValue === "Is the Pension clause applicable?" && answer === true) {
-        const hrContactIndex = highlightedTexts.indexOf("[HR/Relevant Contact]");
-        if (hrContactIndex !== -1 && requiredQuestions[hrContactIndex]) {
-          const followUpAnswer = userAnswers["Who is the HR/Relevant Contact?"];
-          if (!followUpAnswer || (typeof followUpAnswer === "string" && !followUpAnswer.trim())) return false;
-          if (inputErrors["Who is the HR/Relevant Contact?"]) return false;
-        }
-      }
-
-      if (primaryValue === "Is the sick pay policy applicable?" && answer === true) {
-        const sickPayIndex = highlightedTexts.indexOf("[Details of Company Sick Pay Policy]");
-        if (sickPayIndex !== -1 && requiredQuestions[sickPayIndex]) {
-          const followUpAnswer = userAnswers["What's the sick pay policy?"];
-          if (!followUpAnswer || (typeof followUpAnswer === "string" && !followUpAnswer.trim())) return false;
-          if (inputErrors["What's the sick pay policy?"]) return false;
-        }
-      }
-
-      if (primaryValue === "Is the clause of probationary period applicable?" && answer === true) {
-        const probationPeriodIndex = highlightedTexts.indexOf("Probation Period Length");
-        if (probationPeriodIndex !== -1 && requiredQuestions[probationPeriodIndex]) {
-          const followUpAnswer = userAnswers["What's the probation period length?"];
-          if (!followUpAnswer || (typeof followUpAnswer === "string" && !followUpAnswer.trim())) return false;
-          if (inputErrors["What's the probation period length?"]) return false;
-        }
-      }
-
-      // Add validation for unused holidays follow-up questions
-      if (primaryValue === "Would unused holidays would be paid for if employee is termination?" && answer === true) {
-        const holidayPayIndex = highlightedTexts.indexOf("[Holiday Pay]");
-        const unusedHolidayDaysIndex = highlightedTexts.indexOf("[Unused Holiday Days]");
-        
-        if (holidayPayIndex !== -1 && requiredQuestions[holidayPayIndex]) {
-          const holidayPayAnswer = userAnswers["Specify the holiday pay?"];
-          if (!holidayPayAnswer?.amount || (typeof holidayPayAnswer.amount === "string" && !holidayPayAnswer.amount.trim())) return false;
-          if (inputErrors["Specify the holiday pay?"]) return false;
-        }
-
-        if (unusedHolidayDaysIndex !== -1 && requiredQuestions[unusedHolidayDaysIndex]) {
-          const unusedHolidaysAnswer = userAnswers["Specify the number of unused holidays?"];
-          if (!unusedHolidaysAnswer || (typeof unusedHolidaysAnswer === "string" && !unusedHolidaysAnswer.trim())) return false;
-          if (inputErrors["Specify the number of unused holidays?"]) return false;
-        }
-      }
-    }
-    return true;
   };
 
   const handleContinueToDocument = () => {
@@ -929,16 +847,38 @@ const Live_Generation = () => {
   };
 
   const handleFinish = () => {
-    if (!areAllRequiredAnswered()) {
+    const hasErrors = Object.values(inputErrors).some((error) => error !== "");
+    if (hasErrors) {
       setShowWarning(true);
       setTimeout(() => setShowWarning(false), 5000);
       return;
     }
-  
-    // Determine certification status
-    const flag = questionnaireScore >= 40;
+
+    const unansweredRequiredFields = highlightedTexts
+      .map((text, index) => {
+        const { primaryValue } = determineQuestionType(text);
+        const isRequired = requiredQuestions[index] || false;
+        if (!primaryValue || !isRequired) return null;
+
+        const answer = userAnswers[primaryValue];
+        if (
+          answer === null ||
+          answer === "" ||
+          (typeof answer === "object" && answer !== null && (!answer.amount || !answer.currency))
+        ) {
+          return primaryValue;
+        }
+        return null;
+      })
+      .filter(Boolean);
+
+    if (unansweredRequiredFields.length > 0) {
+      setShowWarning(true);
+      setTimeout(() => setShowWarning(false), 5000);
+      return;
+    }
+
     let message = "";
-    
     if (questionnaireScore >= 151) {
       message = "Congratulations! You've achieved Document Automation Pro certification (Excellent Performance)";
     } else if (questionnaireScore >= 81) {
@@ -948,10 +888,15 @@ const Live_Generation = () => {
     } else {
       message = "Please retry the exercise to improve your accuracy.";
     }
-  
+
     setCertificationMessage(message);
     setShowCertificationPopup(true);
-    setIsCertified(flag);
+  };
+
+  const handleReplay = () => {
+    sessionStorage.clear();
+    console.log("sessionStorage cleared on Replay click");
+    navigate("/Level-Two-Part-Two"); // Use navigate instead of window.location.href
   };
 
   return (
@@ -962,14 +907,39 @@ const Live_Generation = () => {
           : "bg-gradient-to-br from-indigo-50 via-teal-50 to-pink-50"
       }`}
     >
-      <Navbar />
-      {/* Add this score display */}
-      <div className={`fixed top-14 right-2 p-2 rounded-lg shadow-md z-50 ${
-        isDarkMode 
-          ? "bg-gray-700/90 text-teal-300" 
-          : "bg-white/90 text-teal-700"
-      }`}>
+      <Navbar
+        level="/Level-Two-Part-Two"
+        questionnaire="/Questionnaire"
+        live_generation="/Live_Generation"
+      />
+      <div
+        className={`fixed top-14 right-2 p-2 rounded-lg shadow-md z-50 ${
+          isDarkMode ? "bg-gray-700/90 text-teal-300" : "bg-white/90 text-teal-700"
+        }`}
+      >
         <p className="font-bold">Score: {questionnaireScore}</p>
+      </div>
+      <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 flex space-x-4 z-30">
+        <button
+          onClick={() => navigate("/Questionnaire")}
+          className={`px-4 py-2 rounded-lg font-medium shadow-md transition-all duration-300 ${
+            isDarkMode
+              ? "bg-gray-700 text-teal-200 hover:bg-gray-600"
+              : "bg-teal-200 text-teal-900 hover:bg-cyan-200"
+          }`}
+        >
+          ← Back to Questionnaire
+        </button>
+        <button
+          onClick={() => navigate("/")}
+          className={`px-4 py-2 rounded-lg font-medium shadow-md transition-all duration-300 ${
+            isDarkMode
+              ? "bg-gray-700 text-teal-200 hover:bg-gray-600"
+              : "bg-teal-200 text-teal-900 hover:bg-cyan-200"
+          }`}
+        >
+          Home
+        </button>
       </div>
       <div className="flex-grow flex items-center justify-center py-12 px-6">
         <div className="flex flex-row w-full max-w-7xl">
@@ -985,29 +955,17 @@ const Live_Generation = () => {
                 <h2 className={`text-2xl font-semibold mb-6 tracking-wide ${isDarkMode ? "text-teal-300" : "text-teal-700"}`}>
                   Questions
                 </h2>
-                {questionOrder.map((originalIndex, displayIndex) => {
-                  const text = highlightedTexts[originalIndex];
-                  const { primaryValue } = determineQuestionType(text);
-                  if (!primaryValue || skippedQuestions.includes(primaryValue)) return null;
-                  return renderAnswerInput(originalIndex, displayIndex);
-                })}
+                {highlightedTexts.map((_, index) => renderAnswerInput(index))}
                 <div className="flex justify-end mt-8">
                   <button
-                    id="finish-button"
-                    className={`relative px-6 py-3 rounded-lg shadow-md transform transition-all duration-300 flex items-center space-x-2 ${
-                      areAllRequiredAnswered()
-                        ? isDarkMode
-                          ? "bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white hover:scale-105"
-                          : "bg-gradient-to-r from-teal-400 to-cyan-400 hover:from-teal-500 hover:to-cyan-500 text-white hover:scale-105"
-                        : isDarkMode
-                        ? "bg-gray-600/50 text-gray-400 cursor-not-allowed"
-                        : "bg-gray-300/50 text-gray-600 cursor-not-allowed"
+                    className={`px-6 py-3 text-white rounded-lg shadow-md transform hover:scale-105 transition-all duration-300 ${
+                      isDarkMode
+                        ? "bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800"
+                        : "bg-gradient-to-r from-teal-400 to-cyan-400 hover:from-teal-500 hover:to-cyan-500"
                     }`}
                     onClick={handleFinish}
-                    disabled={!areAllRequiredAnswered()}
                   >
-                    <span>Finish</span>
-                    {!areAllRequiredAnswered()}
+                    Finish
                   </button>
                 </div>
               </>
@@ -1046,21 +1004,21 @@ const Live_Generation = () => {
               })}
             </div>
           </div>
+          <WarningAlert
+            message="Please correct all input errors and answer all required questions before finishing."
+            isVisible={showWarning}
+            isDarkMode={isDarkMode}
+          />
+          <CertificationPopup
+            message={certificationMessage}
+            isVisible={showCertificationPopup}
+            isDarkMode={isDarkMode}
+            onContinue={handleContinueToDocument}
+            onReplay={handleReplay}
+            score={questionnaireScore}
+          />
         </div>
       </div>
-      <WarningAlert
-        message="Please answer all required questions marked with an asterisk (*)."
-        isVisible={showWarning}
-        isDarkMode={isDarkMode}
-      />
-      <CertificationPopup
-        message={certificationMessage}
-        isVisible={showCertificationPopup}
-        isDarkMode={isDarkMode}
-        onContinue={handleContinueToDocument}
-        onReplay={() => window.location.href = "/Level-Two-Part-Two"}
-        score={questionnaireScore}
-      />
     </div>
   );
 };

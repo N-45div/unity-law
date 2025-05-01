@@ -1,52 +1,58 @@
+import React from "react";
 import Navbar from "../components/Navbar";
-import { FaChevronDown, FaChevronLeft, FaChevronRight } from "react-icons/fa";
-import React, { useEffect, useContext, useCallback, useState, useRef } from "react";
+import { FaChevronLeft, FaChevronRight, FaChevronDown } from "react-icons/fa";
+import { useState, useEffect, useContext, useCallback, useRef } from "react";
 import { useQuestionType } from "../context/QuestionTypeContext";
 import { useHighlightedText } from "../context/HighlightedTextContext";
-import { determineQuestionType, numberTypes } from "../utils/questionTypeUtils";
+import { useQuestionEditContext, QuestionMaps } from "../context/QuestionEditContext.tsx";
 import { ThemeContext } from "../context/ThemeContext";
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useScore } from "../context/ScoreContext";
-import 'shepherd.js/dist/css/shepherd.css';
+import { useNavigate } from "react-router-dom";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 interface DivWithDropdownProps {
   textValue: string;
   index: number;
   onTypeChange: (index: number, type: string) => void;
+  onTypeChanged: (index: number, changed: boolean) => void;
   onQuestionTextChange: (index: number, newText: string) => void;
   onRequiredChange: (index: number, required: boolean) => void;
   initialQuestionText: string;
   initialType: string;
   initialRequired: boolean;
+  initialTypeChanged: boolean;
   isFollowUp?: boolean;
-  providedId: string;
-  typeChanged: boolean;
 }
 
 const DivWithDropdown: React.FC<DivWithDropdownProps> = ({
   textValue,
   index,
   onTypeChange,
+  onTypeChanged,
   onQuestionTextChange,
   onRequiredChange,
   initialQuestionText,
   initialType,
-  initialRequired,
+  initialRequired = false,
+  initialTypeChanged = false,
   isFollowUp = false,
-  typeChanged,
 }) => {
   const { isDarkMode } = useContext(ThemeContext);
-  const [questionText, setQuestionText] = React.useState(initialQuestionText || "No text selected");
-  const [selectedType, setSelectedType] = React.useState<string>(initialType || "Text");
-  const [isOpen, setIsOpen] = React.useState(false);
-  const [isRequired, setIsRequired] = React.useState(initialRequired);
-  const { primaryValue } = determineQuestionType(textValue);
+  const [questionText, setQuestionText] = useState(initialQuestionText || "No text selected");
+  const [selectedType, setSelectedType] = useState<string>(initialType || "Text");
+  const [isOpen, setIsOpen] = useState(false);
+  const [isRequired, setIsRequired] = useState(initialRequired);
+  const [typeChanged, setTypeChanged] = useState(initialTypeChanged);
+  const { findPlaceholderByValue, updateQuestion, determineQuestionType, questionMaps } = useQuestionEditContext();
+  const { primaryValue, validTypes } = determineQuestionType(textValue);
 
   const handleTypeSelect = (type: string) => {
     if (typeChanged) return;
-    
+
     setSelectedType(type);
     onTypeChange(index, type);
+    setTypeChanged(true);
+    onTypeChanged(index, true);
 
     let newQuestionText = questionText;
     if (questionText === primaryValue || questionText === "No text selected") {
@@ -66,9 +72,26 @@ const DivWithDropdown: React.FC<DivWithDropdownProps> = ({
   };
 
   const handleQuestionTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const oldText = textValue;
     const newText = e.target.value;
     setQuestionText(newText);
     onQuestionTextChange(index, newText);
+    const { primaryType } = determineQuestionType(oldText);
+    const placeholder = findPlaceholderByValue(oldText);
+
+    if (placeholder && primaryType !== "Unknown") {
+      const typeKey = (primaryType.toLowerCase() + "Types") as string;
+
+      if (
+        typeKey === "textTypes" ||
+        typeKey === "numberTypes" ||
+        typeKey === "dateTypes" ||
+        typeKey === "radioTypes"
+      ) {
+        updateQuestion(typeKey as keyof QuestionMaps, placeholder, newText);
+      }
+      console.log("question map: ", questionMaps);
+    }
   };
 
   const handleRequiredToggle = () => {
@@ -77,17 +100,15 @@ const DivWithDropdown: React.FC<DivWithDropdownProps> = ({
     onRequiredChange(index, newRequired);
   };
 
-  const dropdownOptions = ["Text", "Paragraph", "Email", "Radio", "Number", "Date"];
-
   return (
     <div className={`flex items-center space-x-8 w-full relative ${isFollowUp ? "ml-0" : ""}`}>
-      <button className="flex flex-col justify-between h-10 w-12 p-1 transform hover:scale-105 transition-all duration-300 cursor-move">
+      <button className="flex flex-col justify-between h-10 w-12 p-1 transform hover:scale-105 transition-all duration-300">
         <span className={`block h-1 w-full rounded-full ${isDarkMode ? "bg-teal-400" : "bg-teal-600"}`}></span>
         <span className={`block h-1 w-full rounded-full ${isDarkMode ? "bg-teal-400" : "bg-teal-600"}`}></span>
         <span className={`block h-1 w-full rounded-full ${isDarkMode ? "bg-teal-400" : "bg-teal-600"}`}></span>
       </button>
       <div
-        className={`relative w-full max-w-lg h-36 rounded-xl shadow-lg flex flex-col items-center justify-center text-lg font-semibold p-6 z-10 transform transition-all duration-300 hover:shadow-xl ${
+        className={`relative w-full mt-5 max-w-lg h-36 rounded-xl shadow-lg flex flex-col items-center justify-center text-lg font-semibold p-6 z-10 transform transition-all duration-300 hover:shadow-xl ${
           isDarkMode
             ? "bg-gradient-to-br from-gray-700 to-gray-800 text-teal-200"
             : "bg-gradient-to-br from-teal-100 to-cyan-100 text-teal-900"
@@ -109,7 +130,7 @@ const DivWithDropdown: React.FC<DivWithDropdownProps> = ({
           {isRequired && <span className="text-red-500 ml-2">*</span>}
         </div>
 
-        <div id="text-option-button" className="absolute top-1/2 right-6 transform -translate-y-1/2 flex items-center space-x-2">
+        <div className="absolute top-1/2 right-6 transform -translate-y-1/2 flex items-center space-x-2">
           <div className="relative">
             <button
               className={`flex items-center space-x-2 text-sm px-3 py-1 rounded-lg shadow-md transition-all duration-300 ${
@@ -125,7 +146,6 @@ const DivWithDropdown: React.FC<DivWithDropdownProps> = ({
             </button>
             {isOpen && !typeChanged && (
               <div
-                id="open-drawer"
                 className={`absolute right-0 mt-1 w-40 h-[12vh] rounded-lg shadow-lg z-50 ${
                   isDarkMode
                     ? "bg-gray-700/90 backdrop-blur-sm border-gray-600"
@@ -139,7 +159,7 @@ const DivWithDropdown: React.FC<DivWithDropdownProps> = ({
                 }}
               >
                 <div className="hide-scrollbar">
-                  {dropdownOptions.map((type) => (
+                  {validTypes.map((type) => (
                     <div
                       key={type}
                       className={`px-4 py-2 cursor-pointer transition-all duration-200 ${
@@ -187,35 +207,30 @@ const Questionnaire = () => {
   const [leftActive, setLeftActive] = useState(true);
   const [rightActive, setRightActive] = useState(false);
   const { highlightedTexts } = useHighlightedText();
-  const {
-    selectedTypes,
-    setSelectedTypes,
-    setEditedQuestions,
-    requiredQuestions,
-    setRequiredQuestions,
-    questionOrder,
-    setQuestionOrder,
-    uniqueQuestions,
-    setUniqueQuestions,
-    questionTexts,
-    setQuestionTexts,
-  } = useQuestionType();
-  const [scoredQuestions, setScoredQuestions] = useState<Record<number, { typeScored: boolean, requiredScored: boolean }>>({});
+  const { selectedTypes, setSelectedTypes, setEditedQuestions, requiredQuestions, setRequiredQuestions } = useQuestionType();
+  const [uniqueQuestions, setUniqueQuestions] = useState<string[]>([]);
+  const [questionOrder, setQuestionOrder] = useState<number[]>([]);
+  const [duplicateDetected] = useState<boolean>(false);
+  const [questionTexts, setQuestionTexts] = useState<string[]>([]);
+  const [scoredQuestions, setScoredQuestions] = useState<Record<number, { typeScored: boolean; requiredScored: boolean }>>({});
   const [bonusAwarded, setBonusAwarded] = useState(false);
-  const [scoreFeedback, setScoreFeedback] = useState<{points: number, id: number} | null>(null);
-  const [typeChangedMap, setTypeChangedMap] = useState<Record<number, boolean>>({});
+  const [scoreFeedback, setScoreFeedback] = useState<{ points: number; id: number } | null>(null);
+  const [typeChangedStates, setTypeChangedStates] = useState<boolean[]>([]);
   const feedbackId = useRef(0);
+  const { updateQuestion, determineQuestionType, findPlaceholderByValue } = useQuestionEditContext();
+  const navigate = useNavigate();
 
   const followUpQuestions = [
     "What's the probation period length?",
     "What's the probation extension length?",
     "How many weeks?",
     "Who is the HR/Relevant Contact?",
+    "What is the additional work location?",
   ];
 
   const showFeedback = (points: number) => {
     feedbackId.current += 1;
-    setScoreFeedback({points, id: feedbackId.current});
+    setScoreFeedback({ points, id: feedbackId.current });
     setTimeout(() => setScoreFeedback(null), 1500);
   };
 
@@ -223,73 +238,78 @@ const Questionnaire = () => {
     return texts.map(() => false);
   };
 
-  const enhancedDetermineQuestionType = useCallback((text: string) => {
-    const result = determineQuestionType(text);
-    return {
-      ...result,
-      correctType: result.primaryType
-    };
-  }, []);
+  const enhancedDetermineQuestionType = useCallback(
+    (text: string) => {
+      const result = determineQuestionType(text);
+      return {
+        ...result,
+        correctType: result.primaryType,
+      };
+    },
+    [determineQuestionType]
+  );
 
-  const scoreTypeSelection = useCallback((index: number, selectedType: string) => {
-    if (scoredQuestions[index]?.typeScored) return;
-    
-    const textValue = uniqueQuestions[index];
-    const { correctType } = enhancedDetermineQuestionType(textValue);
-    
-    const isEquivalent = (selectedType === "Text" && correctType === "Paragraph") || 
-                         (selectedType === "Paragraph" && correctType === "Text");
-    
-    const isCorrect = selectedType === correctType || isEquivalent;
-    const points = isCorrect ? 2 : -2;
-    
-    updateQuestionnaireScore(points);
-    showFeedback(points);
-    
-    setScoredQuestions(prev => ({
-      ...prev,
-      [index]: { 
-        ...prev[index], 
-        typeScored: true,
-        typeCorrect: isCorrect
-      }
-    }));
+  const scoreTypeSelection = useCallback(
+    (index: number, selectedType: string) => {
+      if (scoredQuestions[index]?.typeScored) return;
 
-    setTypeChangedMap(prev => ({
-      ...prev,
-      [index]: true
-    }));
-  }, [uniqueQuestions, enhancedDetermineQuestionType, updateQuestionnaireScore, scoredQuestions]);
+      const textValue = uniqueQuestions[index];
+      const { correctType } = enhancedDetermineQuestionType(textValue);
 
-  const scoreRequiredStatus = useCallback((index: number, isRequired: boolean) => {
-    if (isRequired) {
-      if (!scoredQuestions[index]?.requiredScored) {
-        updateQuestionnaireScore(2);
-        showFeedback(2);
-        setScoredQuestions(prev => ({
-          ...prev,
-          [index]: { 
-            ...prev[index], 
-            requiredScored: true,
-            requiredCorrect: true
-          }
-        }));
+      const isEquivalent =
+        (selectedType === "Text" && correctType === "Paragraph") ||
+        (selectedType === "Paragraph" && correctType === "Text");
+
+      const isCorrect = selectedType === correctType || isEquivalent;
+      const points = isCorrect ? 2 : -2;
+
+      updateQuestionnaireScore(points);
+      showFeedback(points);
+
+      setScoredQuestions((prev) => ({
+        ...prev,
+        [index]: {
+          ...prev[index],
+          typeScored: true,
+          typeCorrect: isCorrect,
+        },
+      }));
+    },
+    [uniqueQuestions, enhancedDetermineQuestionType, scoredQuestions, updateQuestionnaireScore]
+  );
+
+  const scoreRequiredStatus = useCallback(
+    (index: number, isRequired: boolean) => {
+      if (isRequired) {
+        if (!scoredQuestions[index]?.requiredScored) {
+          updateQuestionnaireScore(2);
+          showFeedback(2);
+          setScoredQuestions((prev) => ({
+            ...prev,
+            [index]: {
+              ...prev[index],
+              requiredScored: true,
+              requiredCorrect: true,
+            },
+          }));
+        }
+      } else {
+        if (scoredQuestions[index]?.requiredScored) {
+          updateQuestionnaireScore(-2);
+          showFeedback(-2);
+          setScoredQuestions((prev) => ({
+            ...prev,
+            [index]: {
+              ...prev[index],
+              requiredScored: false,
+              requiredCorrect: false,
+            },
+          }));
+        }
       }
-    } else {
-      if (scoredQuestions[index]?.requiredScored) {
-        updateQuestionnaireScore(-2);
-        showFeedback(-2);
-        setScoredQuestions(prev => ({
-          ...prev,
-          [index]: { 
-            ...prev[index], 
-            requiredScored: false,
-            requiredCorrect: false
-          }
-        }));
-      }
-    }
-  }, [updateQuestionnaireScore, scoredQuestions]);
+    },
+    [updateQuestionnaireScore, scoredQuestions]
+  );
 
   const checkForBonus = useCallback(() => {
     if (uniqueQuestions.length === 0 || bonusAwarded) return;
@@ -297,11 +317,12 @@ const Questionnaire = () => {
     const allCorrect = uniqueQuestions.every((text, index) => {
       const { correctType } = enhancedDetermineQuestionType(text);
       const selectedType = selectedTypes[index];
-      
-      const typeCorrect = selectedType === correctType || 
-                         (selectedType === "Text" && correctType === "Paragraph") || 
-                         (selectedType === "Paragraph" && correctType === "Text");
-      
+
+      const typeCorrect =
+        selectedType === correctType ||
+        (selectedType === "Text" && correctType === "Paragraph") ||
+        (selectedType === "Paragraph" && correctType === "Text");
+
       const requiredCorrect = requiredQuestions[index];
       return typeCorrect && requiredCorrect;
     });
@@ -317,72 +338,130 @@ const Questionnaire = () => {
     const processedTexts: string[] = [];
     const questionMap = new Map();
 
-    const isProbationaryClauseSelected = highlightedTexts.some((text) =>
-      text.toLowerCase().includes("probationary period") && 
-      text.includes("[Probation Period Length]") && 
-      text.length > "[Probation Period Length]".length
+    const isProbationaryClauseSelected = highlightedTexts.some(
+      (text) =>
+        text.toLowerCase().includes("probationary period") &&
+        text.includes("[Probation Period Length]") &&
+        text.length > "[Probation Period Length]".length
     );
 
-    const isProbationLengthExplicitlySelected = highlightedTexts.includes("Probation Period Length");
+    const isAdditionalLocationsClauseSelected = highlightedTexts.some((text) =>
+      text.includes("The Employee may be required to work at [other locations].") ||
+      text.includes("/The Employee may be required to work at [other locations]./")
+    );
 
     const filteredQuestions = highlightedTexts.filter((text) => {
-      const { primaryValue } = determineQuestionType(text);
+      const { primaryValue } = enhancedDetermineQuestionType(text);
       const isFollowUp = followUpQuestions.includes(primaryValue || "");
 
-      if (text === "Probation Period Length") {
-        return true;
-      }
-
-      if (isProbationaryClauseSelected && text === "Is the clause of probationary period applicable?") {
-        return true;
-      }
-
-      if (isProbationaryClauseSelected && text === "Probation Period Length" && !isProbationLengthExplicitlySelected) {
+      if (isProbationaryClauseSelected && text === "Probation Period Length") {
         return false;
       }
 
-      const shouldInclude = !isFollowUp ||
-        (primaryValue === "What's the probation period length?" && text === "Probation Period Length");
+      const shouldInclude =
+        text === "USA" ||
+        text.includes("The Employee may be required to work at [other locations].") ||
+        (text === "other locations" && isAdditionalLocationsClauseSelected) ||
+        (primaryValue === "What's the probation period length?" &&
+          text === "Probation Period Length" &&
+          !isProbationaryClauseSelected) ||
+        (!isFollowUp && text !== "other locations" && !text.includes("The Employee may be required to work at [other locations]."));
+
       return shouldInclude;
     });
 
     for (const text of filteredQuestions) {
-      const { primaryValue } = determineQuestionType(text);
-      if (primaryValue && !questionMap.has(primaryValue)) {
-        questionMap.set(primaryValue, text);
+      const { primaryValue } = enhancedDetermineQuestionType(text);
+      const displayValue = primaryValue || text;
+      if (displayValue && !questionMap.has(displayValue)) {
+        questionMap.set(displayValue, text);
         processedTexts.push(text);
       }
     }
 
-    setUniqueQuestions(processedTexts);
-    const initialRequired = initializeRequiredStatus(processedTexts);
-    setRequiredQuestions(initialRequired);
+    if (highlightedTexts.includes("USA") && !processedTexts.includes("USA")) {
+      processedTexts.push("USA");
+    }
 
-    const initialTexts = processedTexts.map(
-      (text) => determineQuestionType(text).primaryValue || "No text selected"
-    );
-    const initialTypes = processedTexts.map((text) => {
-      const { primaryValue, primaryType } = determineQuestionType(text);
-      if (primaryValue === "What's the annual salary?") {
-        return "Number";
+    const orderedTexts: string[] = [];
+    const smallConditionText = "The Employee may be required to work at [other locations].";
+    const followUpText = "other locations";
+
+    filteredQuestions.forEach((text) => {
+      if (text.includes(smallConditionText) || text === "/The Employee may be required to work at [other locations]./") {
+        orderedTexts.push(text);
+        if (highlightedTexts.includes(followUpText) && !orderedTexts.includes(followUpText)) {
+          orderedTexts.push(followUpText);
+        }
+      } else if (text !== followUpText) {
+        orderedTexts.push(text);
       }
-      if (numberTypes.hasOwnProperty(text)) {
-        return "Number";
-      }
-      return primaryType !== "Unknown" ? primaryType : "Text";
     });
 
+    setUniqueQuestions(orderedTexts);
+    const initialRequired = initializeRequiredStatus(orderedTexts);
+    setRequiredQuestions(initialRequired);
+
+    const initialTexts = orderedTexts.map((text) => {
+      const { primaryValue } = determineQuestionType(text);
+      return primaryValue || "No text selected";
+    });
+
+    const savedTypes = sessionStorage.getItem("selectedQuestionTypes");
+    let initialTypes: string[] = [];
+    if (savedTypes) {
+      const parsedTypes = JSON.parse(savedTypes);
+      if (parsedTypes.length !== orderedTexts.length) {
+        console.warn("Mismatch in savedTypes length. Resetting to default 'Text'.");
+        initialTypes = orderedTexts.map(() => "Text");
+      } else {
+        initialTypes = orderedTexts.map((_, index) => parsedTypes[index] ?? "Text");
+      }
+    } else {
+      initialTypes = orderedTexts.map(() => "Text");
+    }
+
+    const savedTypeChanged = sessionStorage.getItem("typeChangedStates");
+    let initialTypeChanged: boolean[] = [];
+    if (savedTypeChanged) {
+      const parsedTypeChanged = JSON.parse(savedTypeChanged);
+      if (parsedTypeChanged.length !== orderedTexts.length) {
+        console.warn("Mismatch in savedTypeChanged length. Resetting to false.");
+        initialTypeChanged = orderedTexts.map(() => false);
+      } else {
+        initialTypeChanged = orderedTexts.map((_, index) => parsedTypeChanged[index] ?? false);
+      }
+    } else {
+      initialTypeChanged = orderedTexts.map(() => false);
+    }
+
+    const savedOrder = sessionStorage.getItem("questionOrder");
+    let initialOrder: number[] = [];
+    if (savedOrder) {
+      initialOrder = JSON.parse(savedOrder);
+      if (initialOrder.length !== orderedTexts.length) {
+        initialOrder = orderedTexts.map((_, index) => index);
+      }
+    } else {
+      initialOrder = orderedTexts.map((_, index) => index);
+    }
+
+    setQuestionOrder(initialOrder);
     setQuestionTexts(initialTexts);
     setSelectedTypes(initialTypes);
     setEditedQuestions(initialTexts);
+    setTypeChangedStates(initialTypeChanged);
     setScoredQuestions({});
     setBonusAwarded(false);
-    setTypeChangedMap({});
 
-    if (questionOrder.length !== processedTexts.length) {
-      setQuestionOrder(processedTexts.map((_, index) => index));
-    }
-  }, [highlightedTexts, setUniqueQuestions, setQuestionTexts, setSelectedTypes, setEditedQuestions, setRequiredQuestions, setQuestionOrder]);
+    console.log("Initial typeChangedStates:", initialTypeChanged);
+    console.log("Initial selectedTypes:", initialTypes);
+    console.log("Initial questionTexts:", initialTexts);
+
+    sessionStorage.setItem("selectedQuestionTypes", JSON.stringify(initialTypes));
+    sessionStorage.setItem("typeChangedStates", JSON.stringify(initialTypeChanged));
+    sessionStorage.setItem("questionOrder", JSON.stringify(initialOrder));
+  }, [highlightedTexts, setSelectedTypes, setEditedQuestions, setRequiredQuestions, enhancedDetermineQuestionType]);
 
   useEffect(() => {
     checkForBonus();
@@ -392,11 +471,13 @@ const Questionnaire = () => {
     const newTypes = [...selectedTypes];
     newTypes[index] = type;
     setSelectedTypes(newTypes);
+    sessionStorage.setItem("selectedQuestionTypes", JSON.stringify(newTypes)); // Consistent key
     scoreTypeSelection(index, type);
 
     const textValue = uniqueQuestions[index];
-    const { primaryValue } = determineQuestionType(textValue);
+    const { primaryValue } = enhancedDetermineQuestionType(textValue);
     const newTexts = [...questionTexts];
+
     if (newTexts[index] === primaryValue || newTexts[index] === "No text selected") {
       if (type.toLowerCase() === "radio" && primaryValue) {
         newTexts[index] = primaryValue;
@@ -412,11 +493,35 @@ const Questionnaire = () => {
     }
   };
 
+  const handleTypeChanged = (index: number, changed: boolean) => {
+    const newTypeChangedStates = [...typeChangedStates];
+    newTypeChangedStates[index] = changed;
+    setTypeChangedStates(newTypeChangedStates);
+    sessionStorage.setItem("typeChangedStates", JSON.stringify(newTypeChangedStates));
+    console.log(`Updated typeChangedStates after change at index ${index}:`, newTypeChangedStates);
+  };
+
   const handleQuestionTextChange = (index: number, newText: string) => {
+    const oldText = questionTexts[index];
     const newTexts = [...questionTexts];
     newTexts[index] = newText;
     setQuestionTexts(newTexts);
     setEditedQuestions(newTexts);
+    const placeholder = findPlaceholderByValue(oldText) || "undefined";
+    const { primaryType } = determineQuestionType(placeholder);
+
+    if (placeholder) {
+      const typeKey = (primaryType.toLowerCase() + "Types") as string;
+
+      if (
+        typeKey === "textTypes" ||
+        typeKey === "numberTypes" ||
+        typeKey === "dateTypes" ||
+        typeKey === "radioTypes"
+      ) {
+        updateQuestion(typeKey as keyof QuestionMaps, placeholder, newText);
+      }
+    }
   };
 
   const handleRequiredChange = (index: number, required: boolean) => {
@@ -426,22 +531,38 @@ const Questionnaire = () => {
     scoreRequiredStatus(index, required);
   };
 
-  const handleDragEnd = (result: any) => {
+  const onDragEnd = (result: any) => {
     if (!result.destination) return;
 
-    const sourceIndex = result.source.index;
-    const destIndex = result.destination.index;
-
     const newOrder = [...questionOrder];
-    const [movedItem] = newOrder.splice(sourceIndex, 1);
-    newOrder.splice(destIndex, 0, movedItem);
-    setQuestionOrder(newOrder);
-  };
+    const [reorderedItem] = newOrder.splice(result.source.index, 1);
+    newOrder.splice(result.destination.index, 0, reorderedItem);
 
-  const filteredUniqueQuestions = questionOrder.map((index) => uniqueQuestions[index] || "");
-  const orderedQuestionTexts = questionOrder.map((index) => questionTexts[index] || "No text selected");
-  const orderedSelectedTypes = questionOrder.map((index) => selectedTypes[index] || "Text");
-  const orderedRequiredQuestions = questionOrder.map((index) => requiredQuestions[index] || false);
+    setQuestionOrder(newOrder);
+    sessionStorage.setItem("questionOrder", JSON.stringify(newOrder));
+
+    const newUniqueQuestions = newOrder.map((index) => uniqueQuestions[index]);
+    const newQuestionTexts = newOrder.map((index) => questionTexts[index]);
+    const newSelectedTypes = newOrder.map((index) => selectedTypes[index]);
+    const newRequiredQuestions = newOrder.map((index) => requiredQuestions[index]);
+    const newTypeChangedStates = newOrder.map((index) => typeChangedStates[index]);
+    const newScoredQuestions = Object.fromEntries(
+      newOrder.map((originalIndex, newIndex) => [
+        newIndex,
+        scoredQuestions[originalIndex] || { typeScored: false, requiredScored: false },
+      ])
+    );
+
+    setUniqueQuestions(newUniqueQuestions);
+    setQuestionTexts(newQuestionTexts);
+    setSelectedTypes(newSelectedTypes);
+    setRequiredQuestions(newRequiredQuestions);
+    setTypeChangedStates(newTypeChangedStates);
+    setScoredQuestions(newScoredQuestions);
+
+    sessionStorage.setItem("selectedQuestionTypes", JSON.stringify(newSelectedTypes));
+    sessionStorage.setItem("typeChangedStates", JSON.stringify(newTypeChangedStates));
+  };
 
   return (
     <div
@@ -451,9 +572,30 @@ const Questionnaire = () => {
           : "bg-gradient-to-br from-indigo-50 via-teal-50 to-pink-50"
       }`}
     >
-      <Navbar level={""} questionnaire={""} live_generation={""} calculations={""} />
-      
-      {/* Added Score Display */}
+      <Navbar
+        level="/Level-Two-Part-Two"
+        questionnaire="/Questionnaire"
+        live_generation="/Live_Generation"
+      />
+      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-4 z-30">
+        <button
+          onClick={() => navigate("/Level-Three-Quiz")}
+          className={`px-4 py-2 rounded-lg font-medium shadow-md transition-all duration-300 ${
+            isDarkMode ? "bg-gray-700 text-teal-200 hover:bg-gray-600" : "bg-teal-200 text-teal-900 hover:bg-cyan-200"
+          }`}
+        >
+          ← Back to Quiz
+        </button>
+        <button
+          onClick={() => navigate("/")}
+          className={`px-4 py-2 rounded-lg font-medium shadow-md transition-all duration-300 ${
+            isDarkMode ? "bg-gray-700 text-teal-200 hover:bg-gray-600" : "bg-teal-200 text-teal-900 hover:bg-cyan-200"
+          }`}
+        >
+          Home
+        </button>
+      </div>
+
       <div
         className={`absolute top-16 left-6 w-40 h-12 rounded-xl shadow-lg flex items-center justify-center text-sm font-semibold z-20 ${
           isDarkMode
@@ -464,12 +606,10 @@ const Questionnaire = () => {
         <div className="relative">
           Score: {questionnaireScore}
           {scoreFeedback && (
-            <div 
+            <div
               key={scoreFeedback.id}
               className={`absolute -top-6 right-0 font-bold text-lg ${
-                scoreFeedback.points > 0 
-                  ? "text-emerald-400" 
-                  : "text-rose-500"
+                scoreFeedback.points > 0 ? "text-emerald-400" : "text-rose-500"
               } animate-[float-up_1.5s_ease-out_forwards]`}
             >
               {scoreFeedback.points > 0 ? `+${scoreFeedback.points}` : scoreFeedback.points}
@@ -477,8 +617,7 @@ const Questionnaire = () => {
           )}
         </div>
       </div>
-      
-      {/* Added Employer/Employee Toggle */}
+
       <div
         className={`absolute top-16 right-6 w-80 h-12 rounded-xl shadow-lg flex items-center justify-center text-sm font-semibold z-20 ${
           isDarkMode
@@ -489,7 +628,7 @@ const Questionnaire = () => {
         <div className="flex items-center space-x-6">
           <div
             className={`flex items-center space-x-2 ${
-              leftActive ? (isDarkMode ? "text-teal-400" : "text-teal-600") : (isDarkMode ? "text-cyan-400" : "text-cyan-500")
+              leftActive ? (isDarkMode ? "text-teal-400" : "text-teal-600") : isDarkMode ? "text-cyan-400" : "text-cyan-500"
             } transition-all duration-300`}
           >
             <span>Employer</span>
@@ -516,7 +655,7 @@ const Questionnaire = () => {
           </div>
           <div
             className={`flex items-center space-x-2 ${
-              rightActive ? (isDarkMode ? "text-teal-400" : "text-teal-600") : (isDarkMode ? "text-cyan-400" : "text-cyan-500")
+              rightActive ? (isDarkMode ? "text-teal-400" : "text-teal-600") : isDarkMode ? "text-cyan-400" : "text-cyan-500"
             } transition-all duration-300`}
           >
             <span>Employee</span>
@@ -524,39 +663,48 @@ const Questionnaire = () => {
         </div>
       </div>
 
+      {duplicateDetected && (
+        <div
+          className={`absolute top-28 right-6 p-4 rounded-xl shadow-md transition-opacity duration-400 z-10 animate-fadeIn ${
+            isDarkMode
+              ? "bg-gradient-to-r from-yellow-800 to-yellow-900 border-l-4 border-yellow-500 text-yellow-200"
+              : "bg-gradient-to-r from-yellow-100 to-yellow-200 border-l-4 border-yellow-400 text-yellow-800"
+          }`}
+        >
+          <p className="font-bold">Duplicate Question</p>
+          <p className="text-sm">This question already exists in the questionnaire.</p>
+        </div>
+      )}
+
       <div className="flex-grow flex flex-col items-center justify-center pt-24 pb-12 px-6 overflow-y-auto">
-        <div className="w-full max-w-4xl">
-          {filteredUniqueQuestions.length > 0 ? (
-            <DragDropContext onDragEnd={handleDragEnd}>
+        <div className="space-y-12 w-full max-w-4xl">
+          {uniqueQuestions.length > 0 ? (
+            <DragDropContext onDragEnd={onDragEnd}>
               <Droppable droppableId="questions">
                 {(provided) => (
-                  <div
-                    {...provided.droppableProps}
-                    ref={provided.innerRef}
-                    className="space-y-12"
-                  >
-                    {filteredUniqueQuestions.map((text, displayIndex) => {
-                      const originalIndex = questionOrder[displayIndex];
+                  <div {...provided.droppableProps} ref={provided.innerRef}>
+                    {questionOrder.map((originalIndex, displayIndex) => {
+                      const text = uniqueQuestions[originalIndex];
+                      const { primaryValue } = enhancedDetermineQuestionType(text);
                       return (
-                        <Draggable key={originalIndex} draggableId={`question-${originalIndex}`} index={displayIndex}>
-                          {(provided, snapshot) => (
-                            <div
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              {...provided.dragHandleProps}
-                              className={`${snapshot.isDragging ? "opacity-80 shadow-" : ""}`}
-                            >
+                        <Draggable
+                          key={primaryValue || `question-${originalIndex}`}
+                          draggableId={primaryValue || `question-${originalIndex}`}
+                          index={displayIndex}
+                        >
+                          {(provided) => (
+                            <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
                               <DivWithDropdown
                                 textValue={text}
                                 index={originalIndex}
                                 onTypeChange={handleTypeChange}
+                                onTypeChanged={handleTypeChanged}
                                 onQuestionTextChange={handleQuestionTextChange}
                                 onRequiredChange={handleRequiredChange}
-                                initialQuestionText={orderedQuestionTexts[displayIndex]}
-                                initialType={orderedSelectedTypes[displayIndex]}
-                                initialRequired={orderedRequiredQuestions[displayIndex]}
-                                providedId={`question-${originalIndex}`}
-                                typeChanged={typeChangedMap[originalIndex] || false}
+                                initialQuestionText={questionTexts[originalIndex] || "No text selected"}
+                                initialType={selectedTypes[originalIndex] || "Text"}
+                                initialRequired={requiredQuestions[originalIndex] || false}
+                                initialTypeChanged={typeChangedStates[originalIndex] || false}
                               />
                             </div>
                           )}
@@ -571,14 +719,10 @@ const Questionnaire = () => {
           ) : (
             <div
               className={`text-center py-12 rounded-xl shadow-lg border ${
-                isDarkMode 
-                  ? "bg-gray-800/80 backdrop-blur-sm border-gray-700/20" 
-                  : "bg-white/80 backdrop-blur-sm border-teal-100/20"
+                isDarkMode ? "bg-gray-800/80 backdrop-blur-sm border-gray-700/20" : "bg-white/80 backdrop-blur-sm border-teal-100/20"
               }`}
             >
-              <p className={`text-lg font-medium ${isDarkMode ? "text-teal-300" : "text-teal-700"}`}>
-                No text has been selected yet.
-              </p>
+              <p className={`text-lg font-medium ${isDarkMode ? "text-teal-300" : "text-teal-700"}`}>No text has been selected yet.</p>
               <p className={`text-sm mt-2 ${isDarkMode ? "text-teal-400" : "text-teal-500"}`}>
                 Go to the Document tab and select text in square brackets to generate questions.
               </p>

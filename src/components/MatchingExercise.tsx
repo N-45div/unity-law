@@ -170,9 +170,9 @@ const MatchingExercise = ({ data }: MatchingExerciseProps) => {
       <div className="mt-6 flex justify-center">
         <button
           className="px-6 py-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition duration-300"
-          onClick={() => navigate('/dashboard')} // Navigate to homepage
+          onClick={() => navigate('/')} // Navigate to homepage
         >
-          Dashboard
+          Home
         </button>
       </div>
     </div>

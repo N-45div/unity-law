@@ -1,4 +1,6 @@
-// questionTypeUtils.ts
+// import React from "react";
+// import { useHighlightedText } from "../context/HighlightedTextContext";
+
 export type QuestionType = "Radio" | "Text" | "Number" | "Date" | "Paragraph" | "Email" | "Unknown";
 
 export const textTypes: { [key: string]: string } = {
@@ -47,7 +49,7 @@ export const radioTypes: { [key: string]: string } = {
   "The first [Probation Period Length] of employment will be a probationary period. The Company shall assess the Employee’s performance and suitability during this time. Upon successful completion, the Employee will be confirmed in their role.": "Is the clause of probationary period applicable?",
   "The Employee will be enrolled in the Company’s pension scheme in accordance with auto-enrolment legislation.": "Is the Pension clause applicable?",
   'or, if applicable, "on [Previous Employment Start Date] with previous continuous service taken into account"': "Is the previous service applicable?",
-  "The Employee may be required to perform additional duties as reasonably assigned by the Company.": "Is the Employee required to perform additional duties as part of their employment?",
+  "The Employee may be required to perform additional duties as reasonably assigned by the Company.":"Is the Employee required to perform additional duties as part of their employment?",
   "The Employee may also be entitled to Company sick pay.": "Would the Employee be entitled to Company Sick Pay?",
   "The Employee shall not receive additional payment for overtime worked": "Is the employee entitled to overtime work?",
   "After the probationary period, either party may terminate the employment by providing [Notice Period] written notice. The Company reserves the right to make a payment in lieu of notice. The Company may summarily dismiss the Employee without notice in cases of gross misconduct.": "Is the termination clause applicable?",
@@ -124,12 +126,13 @@ export const findPlaceholderByValue = (value: string): string | undefined => {
   );
 };
 
-export const determineQuestionType = (text: string): {
-  primaryType: QuestionType,
-  primaryValue: string,
-  validTypes: QuestionType[],
-  alternateType?: QuestionType,
-  alternateValue?: string
+
+export const determineQuestionType = (text: string): { 
+  primaryType: QuestionType, 
+  primaryValue: string, 
+  validTypes: QuestionType[], 
+  alternateType?: QuestionType, 
+  alternateValue?: string 
 } => {
   let primaryType: QuestionType = "Unknown";
   let primaryValue: string = "";
@@ -137,35 +140,25 @@ export const determineQuestionType = (text: string): {
   let alternateType: QuestionType | undefined;
   let alternateValue: string | undefined;
 
-  const normalizedText = text.replace(/\*/g, " ").replace(/\.{3}/g, "").trim(); // Normalize * and ellipsis
-
-  // Radio types (flexible matching for probationary clause)
+  // Radio types (restrict to Radio only, including full clause)
   const fullProbationClause = "The first [Probation Period Length] of employment will be a probationary period. The Company shall assess the Employee’s performance and suitability during this time. Upon successful completion, the Employee will be confirmed in their role.";
   const fullTerminationClause = "After the probationary period, either party may terminate the employment by providing [Notice Period] written notice. The Company reserves the right to make a payment in lieu of notice. The Company may summarily dismiss the Employee without notice in cases of gross misconduct.";
   const fullSickPayClause = "The Employee may also be entitled to Company sick pay of [Details of Company Sick Pay Policy]";
 
-  if (radioTypes.hasOwnProperty(normalizedText)) {
+  if (radioTypes.hasOwnProperty(text) || text === fullProbationClause || text === fullTerminationClause || text === fullSickPayClause) {
     primaryType = "Radio";
-    primaryValue = radioTypes[normalizedText];
-    validTypes.push("Radio");
-  } else if (normalizedText.includes("probationary period") && normalizedText.includes("[Probation Period Length]")) {
-    primaryType = "Radio";
-    primaryValue = "Is the clause of probationary period applicable?";
-    validTypes.push("Radio");
-  } else if (normalizedText === fullProbationClause || normalizedText === fullTerminationClause || normalizedText === fullSickPayClause) {
-    primaryType = "Radio";
-    primaryValue = radioTypes[fullProbationClause] || radioTypes[fullTerminationClause] || radioTypes[fullSickPayClause];
+    primaryValue = radioTypes[text] || radioTypes[fullProbationClause] || radioTypes[fullSickPayClause] || radioTypes[fullTerminationClause];
     validTypes.push("Radio");
   }
 
-  // Text types
+  // Text types (restrict to Text only)
   if (textTypes.hasOwnProperty(text)) {
     primaryType = "Text";
     primaryValue = textTypes[text];
     validTypes = ["Text"];
   }
 
-  // Number types
+  // Number types (restrict to Number only)
   if (numberTypes.hasOwnProperty(text)) {
     if (primaryType === "Unknown") {
       primaryType = "Number";
@@ -177,7 +170,6 @@ export const determineQuestionType = (text: string): {
     validTypes.push("Number");
   }
 
-  // Date types
   if (dateTypes.hasOwnProperty(text)) {
     if (primaryType === "Unknown") {
       primaryType = "Date";
@@ -188,6 +180,8 @@ export const determineQuestionType = (text: string): {
     }
     validTypes.push("Date");
   }
+
+  
 
   if (validTypes.length === 0) {
     return { primaryType: "Unknown", primaryValue: "", validTypes: ["Text", "Paragraph", "Email", "Number", "Date", "Radio"] };
